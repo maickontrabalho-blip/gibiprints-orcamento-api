@@ -1,4 +1,5 @@
 export default async function handler(req, res) {
+
   // Permitir requisições do AutoResponder e do navegador
   res.setHeader("Access-Control-Allow-Origin", "*");
   res.setHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
@@ -77,23 +78,31 @@ export default async function handler(req, res) {
           "Claro! 📲 Vou te ajudar com o atendimento da GIBIPRINTS. Me informe o que você deseja personalizar e a quantidade.";
       }
 
+      // Formato de resposta exigido pelo AutoResponder
       return res.status(200).json({
-        sucesso: true,
-        atendente: "Yasmine",
-        resposta: resposta,
-        mensagemRecebida: mensagem
+        replies: [
+          {
+            message: resposta
+          }
+        ]
       });
 
     } catch (erro) {
       return res.status(500).json({
-        sucesso: false,
-        erro: "Erro ao processar a mensagem."
+        replies: [
+          {
+            message: "Desculpe, ocorreu um erro ao processar sua mensagem."
+          }
+        ]
       });
     }
   }
 
   return res.status(405).json({
-    sucesso: false,
-    erro: "Método não permitido."
+    replies: [
+      {
+        message: "Método não permitido."
+      }
+    ]
   });
 }
