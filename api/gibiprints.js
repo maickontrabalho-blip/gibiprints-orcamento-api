@@ -1,8 +1,7 @@
-import { GoogleGenerativeAI } from "@google/generative-ai";
+import { GoogleGenerativeAI, HarmCategory, HarmBlockThreshold } from "@google/generative-ai";
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 
-// Memória temporária da Yasmine
 let historicoConversas = {};
 
 export default async function handler(req, res) {
@@ -10,9 +9,7 @@ export default async function handler(req, res) {
   res.setHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
   res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization");
 
-  if (req.method === "OPTIONS") {
-    return res.status(200).end();
-  }
+  if (req.method === "OPTIONS") return res.status(200).end();
 
   if (req.method === "POST") {
     try {
@@ -20,44 +17,66 @@ export default async function handler(req, res) {
       const mensagemCliente = dados.query?.message || dados.message || dados.text || "";
       const remetente = dados.query?.sender || "cliente_padrao";
 
-      // Instruções suavizadas para não acionar o bloqueio de segurança
       const instrucoesYasmine = `
         Você é a Yasmine, atendente virtual da gráfica GIBIPRINTS.
-        Colete com o cliente: Produto, Quantidade, Tamanho e Estampa.
-        Faça perguntas naturais, uma de cada vez.
-        Quando o cliente confirmar que o pedido está certo e não quiser mais nada, finalize enviando um resumo simples do pedido.
-        Comece a sua resposta final com a tag [RESUMO_DO_PEDIDO] e liste os itens que vocês combinaram de forma clara e amigável.
+        Colete: Produto, Quantidade, Tamanho e Estampa. Faça perguntas amigáveis, uma por vez.
+        
+        REGRAS DE PREÇO:
+        - Camisa Festa/Memorial: R$ 29,90 cada
+        - Caneca Personalizada: R$ 35,00 cada
+        
+        Quando o cliente confirmar que o pedido está certo e não quiser mais nada, VOCÊ DEVE PARAR DE CONVERSAR e responder EXATAMENTE com a estrutura JSON abaixo, preenchendo os dados (nunca adicione nenhum texto antes ou depois do JSON):
+        
+        {
+          "pedido_finalizado": true,
+          "produto": "{nome do produto}",
+          "quantidade": {número total},
+          "detalhes": "{tamanhos e estampas}",
+          "valor_total": {cálculo do valor numérico}
+        }
       `;
 
-      if (!historicoConversas[remetente]) {
-        historicoConversas[remetente] = [];
-      }
+      if (!historicoConversas[remetente]) historicoConversas[remetente] = [];
+
+      const configuracaoSeguranca = [
+        { category: HarmCategory.HARM_CATEGORY_HARASSMENT, threshold: HarmBlockThreshold.BLOCK_NONE },
+        { category: HarmCategory.HARM_CATEGORY_HATE_SPEECH, threshold: HarmBlockThreshold.BLOCK_NONE },
+        { category: HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT, threshold: HarmBlockThreshold.BLOCK_NONE },
+        { category: HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT, threshold: HarmBlockThreshold.BLOCK_NONE },
+      ];
 
       const model = genAI.getGenerativeModel({
         model: "gemini-1.5-flash",
         systemInstruction: instrucoesYasmine,
+        safetySettings: configuracaoSeguranca,
       });
 
-      const chat = model.startChat({
-        history: historicoConversas[remetente],
-      });
-
+      const chat = model.startChat({ history: historicoConversas[remetente] });
       const result = await chat.sendMessage(mensagemCliente);
-      const respostaIA = result.response.text();
+      let respostaIA = result.response.text();
 
       historicoConversas[remetente] = await chat.getHistory();
 
+      // O "Filtro Mágico": Verifica se a IA soltou o JSON de pedido finalizado
+      if (respostaIA.includes('"pedido_finalizado": true')) {
+        // AQUI ENTRARÁ O CÓDIGO DA FOTO NO PRÓXIMO PASSO!
+        return res.status(200).json({
+          replies: [{ message: "⏳ *Aguarde um instante...* A Yasmine está desenhando o seu comprovante!" }]
+        });
+      }
+
+      // Se não for o final do pedido, apenas responde conversando normalmente
       return res.status(200).json({
         replies: [{ message: respostaIA }]
       });
 
     } catch (erro) {
-      console.error("Erro no Gemini:", erro);
+      console.error("Erro:", erro);
       return res.status(200).json({
-        replies: [{ message: "Ops, o Google bloqueou a geração do meu texto por questões de segurança. Podemos revisar o seu pedido rapidamente?" }]
+        replies: [{ message: "Deu um pequeno erro técnico, podemos confirmar o pedido?" }]
       });
     }
   }
 
-  return res.status(200).json({ replies: [{ message: "API da Yasmine conectada!" }] });
+  return res.status(200).json({ replies: [{ message: "API conectada!" }] });
 }
