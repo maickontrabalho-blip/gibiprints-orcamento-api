@@ -1,9 +1,9 @@
 {
   "name": "gibiprints-api",
   "version": "1.0.0",
-  "description": "API da Yasmine para WhatsApp",
+  "description": "API da Yasmine",
   "main": "api/gibiprints.js",
   "dependencies": {
-    "@google/generative-ai": "^0.1.1"
+    "@google/generative-ai": "latest"
   }
 }
