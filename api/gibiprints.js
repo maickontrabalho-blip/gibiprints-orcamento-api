@@ -75,7 +75,7 @@ Desconto: 10% no total apenas para pagamento de 100% antecipado via Pix.
 
 COMPROVANTE FINAL (GATILHO PARA GERAR A FOTO):
 Quando o cliente confirmar que está tudo correto e concordar em gerar o comprovante, VOCÊ DEVE PARAR DE CONVERSAR COMO HUMANA.
-A partir desse momento exato, não mande texto e não mande chaves Pix no chat. Responda APENAS E EXATAMENTE com a estrutura JSON abaixo, preenchendo os dados que você calculou (não escreva NADA fora das chaves { }):
+A partir desse momento exato, responda APENAS E EXATAMENTE com a estrutura JSON abaixo, preenchendo os dados (não escreva NADA fora das chaves { }):
 
 {
   "pedido_finalizado": true,
@@ -108,10 +108,9 @@ A partir desse momento exato, não mande texto e não mande chaves Pix no chat. 
 
       historicoConversas[remetente] = await chat.getHistory();
 
-      // INTERCEPTADOR DO COMPROVANTE (O "Desenhista" invisível)
       if (respostaIA.includes('"pedido_finalizado": true')) {
         return res.status(200).json({
-          replies: [{ message: "⏳ *Aguarde só um instante, " + remetente + "...* A Yasmine já calculou tudo e está gerando a imagem do seu comprovante com a nossa logo!" }]
+          replies: [{ message: "⏳ *Aguarde só um instante...* A Yasmine já calculou tudo e está gerando a imagem do seu comprovante com a nossa logo!" }]
         });
       }
 
@@ -120,9 +119,11 @@ A partir desse momento exato, não mande texto e não mande chaves Pix no chat. 
       });
 
     } catch (erro) {
-      console.error("Erro:", erro);
+      console.error("Erro detectado:", erro);
+      
+      // RAIO-X ATIVADO: Mostra o erro real no WhatsApp
       return res.status(200).json({
-        replies: [{ message: "Deu um pequeno erro técnico, podemos confirmar os detalhes do pedido?" }]
+        replies: [{ message: "🚨 *ERRO DO SISTEMA:* " + erro.message }]
       });
     }
   }
