@@ -1,3 +1,4 @@
+// ATUALIZAÇÃO FORÇADA DO SISTEMA 1.0.1
 import { GoogleGenerativeAI, HarmCategory, HarmBlockThreshold } from "@google/generative-ai";
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
@@ -121,12 +122,11 @@ A partir desse momento exato, responda APENAS E EXATAMENTE com a estrutura JSON 
     } catch (erro) {
       console.error("Erro detectado:", erro);
       
-      // RAIO-X ATIVADO: Mostra o erro real no WhatsApp
       return res.status(200).json({
         replies: [{ message: "🚨 *ERRO DO SISTEMA:* " + erro.message }]
       });
     }
   }
 
-  return res.status(200).json({ replies: [{ message: "API conectada!" }] });
+  return res.status(200).json({ replies: [{ message: "Vercel atualizada com sucesso para a versão 1.0.1!" }] });
 }
