@@ -96,9 +96,8 @@ A partir desse momento exato, responda APENAS E EXATAMENTE com a estrutura JSON 
         { category: HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT, threshold: HarmBlockThreshold.BLOCK_NONE },
       ];
 
-      // A MUDANÇA ESTÁ AQUI: gemini-1.5-flash-latest
       const model = genAI.getGenerativeModel({
-        model: "gemini-1.5-flash-latest",
+        model: "gemini-1.5-flash",
         systemInstruction: instrucoesYasmine,
         safetySettings: configuracaoSeguranca,
       });
@@ -127,5 +126,5 @@ A partir desse momento exato, responda APENAS E EXATAMENTE com a estrutura JSON 
     }
   }
 
-  return res.status(200).json({ replies: [{ message: "API conectada!" }] });
+  return res.status(200).json({ replies: [{ message: "API conectada e pronta!" }] });
 }
