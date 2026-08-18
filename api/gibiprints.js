@@ -1,4 +1,3 @@
-// ATUALIZAÇÃO FORÇADA DO SISTEMA 1.0.1
 import { GoogleGenerativeAI, HarmCategory, HarmBlockThreshold } from "@google/generative-ai";
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
@@ -97,8 +96,9 @@ A partir desse momento exato, responda APENAS E EXATAMENTE com a estrutura JSON 
         { category: HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT, threshold: HarmBlockThreshold.BLOCK_NONE },
       ];
 
+      // A MUDANÇA ESTÁ AQUI: gemini-1.5-flash-latest
       const model = genAI.getGenerativeModel({
-        model: "gemini-1.5-flash",
+        model: "gemini-1.5-flash-latest",
         systemInstruction: instrucoesYasmine,
         safetySettings: configuracaoSeguranca,
       });
@@ -121,12 +121,11 @@ A partir desse momento exato, responda APENAS E EXATAMENTE com a estrutura JSON 
 
     } catch (erro) {
       console.error("Erro detectado:", erro);
-      
       return res.status(200).json({
         replies: [{ message: "🚨 *ERRO DO SISTEMA:* " + erro.message }]
       });
     }
   }
 
-  return res.status(200).json({ replies: [{ message: "Vercel atualizada com sucesso para a versão 1.0.1!" }] });
+  return res.status(200).json({ replies: [{ message: "API conectada!" }] });
 }
