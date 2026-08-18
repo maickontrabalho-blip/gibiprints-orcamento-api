@@ -26,11 +26,11 @@ export default async function handler(req, res) {
     try {
       const dados = req.body || {};
 
+      // CORREÇÃO: O AutoResponder envia a mensagem dentro de dados.query.message
       const mensagem =
-        dados.mensagem ||
+        dados.query?.message ||
         dados.message ||
         dados.text ||
-        dados.body ||
         "";
 
       const texto = String(mensagem).toLowerCase().trim();
@@ -47,7 +47,7 @@ export default async function handler(req, res) {
         texto.includes("boa noite")
       ) {
         resposta =
-          "Olá! 👋 Seja bem-vindo(a) à GIBIPRINTS! Eu sou a Yasmine. 😊 Como posso ajudar você com seu orçamento?";
+          "Olá! 👋 Seja bem-vindo(a) à GIBIPRINTS! Eu sou a Yasmine. 😊 Como posso ajudar você?";
       }
 
       else if (
@@ -57,8 +57,17 @@ export default async function handler(req, res) {
         texto.includes("orçamento") ||
         texto.includes("orcamento")
       ) {
-        resposta =
-          "Claro! 😊 Posso preparar seu orçamento. Me informe o produto, quantidade, tamanho e tipo de estampa que você deseja.";
+        // CORREÇÃO: Estrutura visual da notinha/comprovante
+        resposta = 
+          "🧾 *COMPROVANTE DE ORÇAMENTO - GIBIPRINTS*\n" +
+          "-----------------------------------\n" +
+          "Status: Aguardando detalhes\n" +
+          "Atendente: Yasmine\n\n" +
+          "Por favor, me informe:\n" +
+          "1️⃣ Produto (ex: Camisa, Caneca)\n" +
+          "2️⃣ Quantidade\n" +
+          "3️⃣ Tipo de Estampa\n\n" +
+          "_Assim que você enviar os dados, eu calculo o valor total para você!_";
       }
 
       else if (
@@ -91,7 +100,7 @@ export default async function handler(req, res) {
       return res.status(500).json({
         replies: [
           {
-            message: "Desculpe, ocorreu um erro ao processar sua mensagem."
+            message: "Desculpe, ocorreu um erro no servidor da GIBIPRINTS ao processar sua mensagem."
           }
         ]
       });
