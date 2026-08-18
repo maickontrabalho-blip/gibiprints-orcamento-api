@@ -1,10 +1,12 @@
 import { GoogleGenerativeAI } from "@google/generative-ai";
 
-// Inicializa a IA com a chave secreta que você salvou na Vercel
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 
+// MEMÓRIA TEMPORÁRIA DA YASMINE
+// Guarda o histórico das conversas na memória da API
+let historicoConversas = {};
+
 export default async function handler(req, res) {
-  // Configurações de permissão do servidor
   res.setHeader("Access-Control-Allow-Origin", "*");
   res.setHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
   res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization");
@@ -13,28 +15,25 @@ export default async function handler(req, res) {
     return res.status(200).end();
   }
 
-  if (req.method === "GET") {
-    return res.status(200).json({ mensagem: "A Yasmine está online e conectada!" });
-  }
-
   if (req.method === "POST") {
     try {
       const dados = req.body || {};
       const mensagemCliente = dados.query?.message || dados.message || dados.text || "";
+      
+      // Captura o remetente para separar as conversas de clientes diferentes
+      const remetente = dados.query?.sender || "cliente_padrao";
 
-      // O cérebro da Yasmine
       const instrucoesYasmine = `
-        Você é a Yasmine, a atendente virtual simpática e humanizada da gráfica GIBIPRINTS.
-        Sua missão é conduzir o atendimento pelo WhatsApp e coletar todos os dados necessários para um orçamento.
+        Você é a Yasmine, a atendente virtual da gráfica GIBIPRINTS.
         Você precisa descobrir:
-        1. Qual o produto (ex: camiseta, regata, caneca)?
+        1. Qual o produto (ex: caneca, camiseta)?
         2. Qual a quantidade?
-        3. Qual o tamanho (P, M, G, GG)?
-        4. Qual o tipo de estampa (Frente, Costa, DTF, Silk)?
+        3. Qual o tamanho?
+        4. Qual o tipo de estampa?
         
-        Faça uma pergunta por vez de forma natural e amigável. Não jogue todas as perguntas de uma vez.
-        Quando você tiver TODAS as informações, pergunte ao cliente se você já "pode gerar o orçamento".
-        SE e SOMENTE SE o cliente confirmar que pode gerar, pare de conversar normalmente e responda APENAS com a seguinte estrutura:
+        Faça UMA pergunta por vez de forma amigável.
+        Quando tiver TODAS as informações, pergunte se pode gerar o orçamento.
+        SE o cliente confirmar, responda APENAS com este formato e NADA MAIS:
         
         [GERAR_COMPROVANTE]
         Produto: {produto}
@@ -43,37 +42,39 @@ export default async function handler(req, res) {
         Estampa: {estampa}
       `;
 
-      // Conectando com o modelo Flash do Gemini
+      // Inicia a memória desse cliente se for a primeira mensagem dele
+      if (!historicoConversas[remetente]) {
+        historicoConversas[remetente] = [];
+      }
+
       const model = genAI.getGenerativeModel({
         model: "gemini-1.5-flash",
         systemInstruction: instrucoesYasmine,
       });
 
-      const result = await model.generateContent(mensagemCliente);
+      // Inicia o chat enviando todo o histórico que a Yasmine já tem com esse cliente
+      const chat = model.startChat({
+        history: historicoConversas[remetente],
+      });
+
+      // Envia a nova mensagem ("Sim") e gera a resposta com base no histórico
+      const result = await chat.sendMessage(mensagemCliente);
       const respostaIA = result.response.text();
 
-      // Devolve a resposta estruturada para o AutoResponder
+      // Atualiza a memória com a nova resposta
+      historicoConversas[remetente] = await chat.getHistory();
+
       return res.status(200).json({
-        replies: [
-          {
-            message: respostaIA
-          }
-        ]
+        replies: [{ message: respostaIA }]
       });
 
     } catch (erro) {
       console.error("Erro no Gemini:", erro);
-      return res.status(500).json({
-        replies: [
-          {
-            message: "Ops, deu um pequeno erro no meu sistema. Pode mandar a mensagem de novo?"
-          }
-        ]
+      return res.status(200).json({
+        replies: [{ message: "Ops, deu um pequeno branco aqui! Pode repetir sua última resposta?" }]
       });
     }
   }
 
-  return res.status(405).json({
-    replies: [{ message: "Método não permitido." }]
-  });
+  return res.status(200).json({ replies: [{ message: "API da Yasmine conectada!" }] });
 }
