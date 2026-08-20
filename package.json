@@ -1,9 +1,0 @@
-{
-  "name": "gibiprints-api",
-  "version": "1.0.1",
-  "description": "API da Yasmine",
-  "main": "api/gibiprints.js",
-  "dependencies": {
-    "@google/generative-ai": "^0.21.0"
-  }
-}
