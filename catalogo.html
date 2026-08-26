@@ -4,8 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#0f6b3b">
-<title>GIBIPRINTS — Catálogo</title>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<title>GIBIPRINTS — Catálogo Online V2</title>
 <style>
 :root{--green:#0f6b3b;--green2:#0b572f;--yellow:#f2c94c;--ink:#173326;--muted:#66736c;--bg:#f5f7f5;--card:#fff;--line:#e2e9e4;--danger:#b42318}
 *{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;background:var(--bg);font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;color:var(--ink)}
@@ -15,7 +14,7 @@ header{position:sticky;top:0;z-index:50;background:rgba(245,247,245,.95);backdro
 .cartBtn{border:0;background:var(--green);color:#fff;border-radius:999px;padding:11px 15px;font-weight:900;box-shadow:0 7px 18px rgba(15,107,59,.18);white-space:nowrap}.cartCount{display:inline-grid;place-items:center;min-width:22px;height:22px;padding:0 6px;margin-left:5px;background:var(--yellow);color:#173326;border-radius:99px;font-size:12px}
 main{max-width:1100px;margin:auto;padding:18px}.status{text-align:center;color:var(--muted);padding:28px}.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:18px}.card{background:var(--card);border:1px solid var(--line);border-radius:22px;overflow:hidden;box-shadow:0 8px 28px rgba(20,50,35,.07)}
 .gallery{height:350px;background:linear-gradient(135deg,#edf2ee,#dfe8e1);position:relative;display:flex;align-items:center;justify-content:center;overflow:hidden}.gallery img{width:100%;height:100%;object-fit:cover;display:block;pointer-events:none;-webkit-user-drag:none}.gallery.empty{font-size:55px;color:#829088}.dots{position:absolute;left:0;right:0;bottom:10px;display:flex;justify-content:center;gap:5px}.dot{width:7px;height:7px;border-radius:50%;background:#fff;opacity:.6;border:1px solid #777}.dot.active{opacity:1;background:var(--yellow);border-color:#8c7400}.nav{position:absolute;top:50%;transform:translateY(-50%);border:0;background:rgba(0,0,0,.38);color:#fff;width:34px;height:34px;border-radius:50%;font-weight:900}.nav.prev{left:10px}.nav.next{right:10px}
-.body{padding:17px}.line{font-size:11px;font-weight:900;letter-spacing:.9px;color:var(--green);text-transform:uppercase}.name{font-size:22px;font-weight:950;margin:5px 0 8px}.desc{font-size:14px;line-height:1.5;color:var(--muted);min-height:42px}.prices{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin-top:13px}.price{background:#f1f6f2;border:1px solid #d7e1da;border-radius:12px;padding:9px 8px;text-align:center;min-width:0;overflow:hidden}.price b{display:block;font-size:14px;line-height:1.2;color:var(--green);white-space:nowrap}.price span{display:block;margin-top:3px;font-size:10px;line-height:1.15;color:var(--muted);font-weight:800}
+.body{padding:17px}.line{font-size:11px;font-weight:900;letter-spacing:.9px;color:var(--green);text-transform:uppercase}.name{font-size:22px;font-weight:950;margin:5px 0 8px}.desc{font-size:14px;line-height:1.5;color:var(--muted);min-height:42px}.prices{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin-top:13px}.priceTitle{grid-column:1/-1;font-size:13px;font-weight:950;color:var(--green);margin-bottom:1px}.price{background:#f1f6f2;border:1px solid #d7e1da;border-radius:12px;padding:9px 8px;text-align:center;min-width:0;overflow:hidden}.price b{display:block;font-size:14px;line-height:1.2;color:var(--green);white-space:nowrap}.price span{display:block;margin-top:3px;font-size:10px;line-height:1.15;color:var(--muted);font-weight:800}
 .formGrid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:14px}.field label{display:block;font-size:11px;font-weight:900;margin-bottom:5px;color:#506058}.field select,.field input,.field textarea{width:100%;border:1px solid #ccd8d0;border-radius:11px;background:#fff;padding:10px;color:var(--ink);outline:none}.field select:focus,.field input:focus,.field textarea:focus{border-color:var(--green);box-shadow:0 0 0 3px rgba(15,107,59,.1)}.qtyRow{display:flex;gap:8px;align-items:end;margin-top:10px}.qty{display:flex;align-items:center;border:1px solid #ccd8d0;border-radius:11px;overflow:hidden;background:#fff}.qty button{border:0;background:#f1f6f2;width:38px;height:42px;font-size:19px;font-weight:900;color:var(--green)}.qty input{border:0!important;border-radius:0!important;text-align:center;width:58px;padding:9px 2px!important;box-shadow:none!important}.add{flex:1;border:0;border-radius:11px;height:42px;background:var(--green);color:#fff;font-weight:950}.add:active,.cartBtn:active{transform:translateY(1px)}
 .cartPanel{position:fixed;inset:0;z-index:100;display:none;background:rgba(0,0,0,.45);padding:12px}.cartPanel.open{display:flex;align-items:flex-end;justify-content:center}.cartBox{width:min(720px,100%);max-height:92vh;overflow:auto;background:#fff;border-radius:24px 24px 10px 10px;padding:18px;box-shadow:0 20px 60px rgba(0,0,0,.22)}.cartHead{display:flex;align-items:center;justify-content:space-between;gap:10px}.close{border:0;background:#eef3ef;color:var(--ink);width:38px;height:38px;border-radius:50%;font-weight:900}.cartItem{border:1px solid var(--line);border-radius:16px;padding:12px;margin-top:10px}.cartItemHead{display:flex;justify-content:space-between;gap:10px}.cartItem b{font-weight:950}.meta{font-size:12px;color:var(--muted);margin-top:4px}.itemActions{display:flex;justify-content:space-between;align-items:center;margin-top:10px}.remove{border:0;background:#fff0ef;color:var(--danger);border-radius:9px;padding:7px 10px;font-weight:800}.summary{margin-top:15px;border-top:1px solid var(--line);padding-top:14px}.total{font-size:21px;font-weight:950;display:flex;justify-content:space-between}.checkout{width:100%;border:0;background:var(--green);color:#fff;padding:13px;border-radius:13px;font-weight:950;margin-top:12px}.checkout:disabled{background:#b9c5be;color:#fff;cursor:not-allowed;box-shadow:none}.minOrder{font-size:13px;font-weight:800;border-radius:12px;padding:10px;margin-top:10px;text-align:center;background:#fff7df;color:#7a5a00;border:1px solid #ead08a}.minOrder.ok{background:#eef8f0;color:var(--green);border-color:#b9d9c1}.clear{width:100%;border:1px solid #ccd8d0;background:#fff;color:var(--ink);padding:11px;border-radius:13px;font-weight:800;margin-top:8px}.customer{margin-top:12px;display:grid;gap:9px}.customer input,.customer textarea,.customer select{width:100%;border:1px solid #ccd8d0;border-radius:11px;padding:10px;background:#fff;color:var(--ink)}
 .addressSuggest{position:relative}
@@ -35,6 +34,7 @@ main{max-width:1100px;margin:auto;padding:18px}.status{text-align:center;color:v
 footer{text-align:center;color:var(--muted);font-size:12px;padding:35px 18px 50px}.error{color:#a33;background:#fff0f0;border:1px solid #f1cccc;padding:14px;border-radius:14px}
 @media(max-width:650px){.top{align-items:flex-start}.sub{display:none}.grid{grid-template-columns:1fr}.gallery{height:330px}.prices{grid-template-columns:repeat(2,1fr)}.formGrid{grid-template-columns:1fr}.cartPanel{padding:0}.cartBox{border-radius:24px 24px 0 0;max-height:94vh}}
 @media (max-width:520px){.prices{grid-template-columns:repeat(2,minmax(0,1fr));gap:7px}.price{padding:8px 6px}.price b{font-size:13px}.price span{font-size:9px}.body{padding:15px}.name{font-size:21px}}
+.galleryError{position:absolute;inset:0;display:grid;place-items:center;color:#829088;font-weight:800;background:#edf2ee}
 </style>
 
 <style id="swipe-gallery-fix">
@@ -86,8 +86,38 @@ footer{text-align:center;color:var(--muted);font-size:12px;padding:35px 18px 50p
 <script>
 const SUPABASE_URL='https://cydmbhmmwkzdthqzvogg.supabase.co';
 const SUPABASE_PUBLISHABLE_KEY='sb_publishable_rzm07nSNcD2CLa6DLtVurQ_XPU8o2B2';
+const SUPABASE_BUCKET='gibiprints-fotos';
 const WHATSAPP_NUMBER='5521982511405';
-const supabaseClient=window.supabase?.createClient ? window.supabase.createClient(SUPABASE_URL,SUPABASE_PUBLISHABLE_KEY) : null;
+
+// V2 estável: não depende do CDN do supabase-js.
+// Isso evita que o catálogo fique preso em “Carregando…” quando o CDN falhar.
+async function supabaseRest(table, query=''){
+  const controller=new AbortController();
+  const timer=setTimeout(()=>controller.abort(),15000);
+  try{
+    const url=`${SUPABASE_URL}/rest/v1/${table}${query ? '?' + query : ''}`;
+    const response=await fetch(url,{
+      method:'GET',
+      headers:{
+        apikey:SUPABASE_PUBLISHABLE_KEY,
+        Authorization:`Bearer ${SUPABASE_PUBLISHABLE_KEY}`,
+        Accept:'application/json'
+      },
+      cache:'no-store',
+      signal:controller.signal
+    });
+    const text=await response.text();
+    if(!response.ok) throw new Error(`Supabase ${response.status}: ${text.slice(0,300)}`);
+    return text ? JSON.parse(text) : [];
+  }catch(e){
+    if(e?.name==='AbortError') throw new Error('Supabase demorou mais de 15 segundos para responder.');
+    throw e;
+  }finally{clearTimeout(timer)}
+}
+function publicStorageUrl(path){
+  if(!path)return '';
+  return `${SUPABASE_URL}/storage/v1/object/public/${SUPABASE_BUCKET}/${String(path).split('/').map(encodeURIComponent).join('/')}`;
+}
 const money=v=>Number(v||0).toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
 const esc=s=>String(s??'').replace(/[&<>'"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c]));
 const keyFor=(p,c,s)=>`${String(p.id)}|${String(c)}|${String(s)}`;
@@ -98,13 +128,13 @@ function fallbackColors(p){const texto=(String(p.nome||'')+' '+String(p.categori
 function getSizes(p){return Array.isArray(p.tamanhos)&&p.tamanhos.length?p.tamanhos:fallbackSizes(p)}
 function getColors(p){return Array.isArray(p.cores)&&p.cores.length?p.cores:fallbackColors(p)}
 function unitPrice(p,q){const v=Array.isArray(p.precos)?p.precos.map(Number):[];if(q>=50)return v[3]||v[2]||v[1]||v[0]||0;if(q>=20)return v[2]||v[1]||v[0]||0;if(q>=10)return v[1]||v[0]||0;return v[0]||0}
-function priceCards(precos){const labels=['1 a 9','10 a 19','20 a 49','50+'];const vals=Array.isArray(precos)?precos.slice(0,4):[];return vals.map((v,i)=>`<div class="price"><b>${money(v)}</b><span>${labels[i]}</span></div>`).join('')}
+function priceCards(precos){const labels=['1 a 9','10 a 19','20 a 49','50+'];const vals=Array.isArray(precos)?precos.slice(0,4).map(Number).filter(v=>Number.isFinite(v)&&v>0):[];if(!vals.length)return '';return `<div class="priceTitle">💰 Preço por quantidade</div>`+vals.map((v,i)=>`<div class="price"><b>${money(v)} / un.</b><span>${labels[i]} peças</span></div>`).join('')}
 function galleryHtml(p){
   const fotos=(p.fotos||[]).filter(Boolean);
   const realIndex=galleryState[p.id]||0;
   if(!fotos.length)return '<div class="gallery empty">📷</div>';
   if(fotos.length===1){
-    return `<div class="gallery swipe-gallery" data-id="${esc(p.id)}"><div class="swipe-track"><div class="swipe-slide"><img src="${esc(fotos[0])}" alt="${esc(p.nome)}" loading="eager" referrerpolicy="no-referrer" onerror="this.onerror=null;this.closest('.gallery')?.classList.add('image-error');this.style.display='none';"></div></div></div>`;
+    return `<div class="gallery swipe-gallery" data-id="${esc(p.id)}"><div class="swipe-track"><div class="swipe-slide"><img src="${esc(fotos[0])}" alt="${esc(p.nome)}" loading="eager" referrerpolicy="no-referrer" onerror="this.onerror=null;this.style.display='none';this.closest('.gallery')?.insertAdjacentHTML('beforeend','<div class=&quot;galleryError&quot;>📷 Foto indisponível</div>')"></div></div></div>`;
   }
   const slides=[fotos[fotos.length-1],...fotos,fotos[0]];
   const dots=fotos.map((_,i)=>`<span class="dot ${i===realIndex?'active':''}"></span>`).join('');
@@ -525,62 +555,59 @@ function finalizeWhatsApp(){
 }
 async function carregarConfiguracaoFreteCatalogo(){
   try{
-    const {data,error}=await supabaseClient.from('catalogo_config').select('frete_km').eq('id','default').maybeSingle();
-    if(error)throw error;
-    const v=Number(data?.frete_km);
+    const data=await supabaseRest('catalogo_config','select=frete_km&id=eq.default&limit=1');
+    const v=Number(data?.[0]?.frete_km);
     if(Number.isFinite(v)&&v>=0.10&&v<=10)catalogFreteKm=Math.round(v*100)/100;
   }catch(e){console.warn('Configuração de frete do catálogo:',e);catalogFreteKm=1.00;}
 }
 
-async function load(){const status=document.getElementById('status');try{
-if(!supabaseClient)throw new Error('Biblioteca do catálogo não carregou. Verifique a internet e recarregue a página.');
-await carregarConfiguracaoFreteCatalogo();
-const {data,error}=await supabaseClient.from('produtos').select('id,nome,categoria,descricao,precos,tamanhos,cores,ativo').eq('ativo',true).order('nome');
-if(error)throw error;
-products=Array.isArray(data)?data:[];
-if(products.length){
-  const ids=products.map(p=>String(p.id));
-  const map=new Map(ids.map(id=>[id,[]]));
+async function load(){
+  const status=document.getElementById('status');
+  const setStatus=t=>{if(status)status.textContent=t};
   try{
-    // Não usamos .in(produto_id, ids) aqui: em catálogos maiores a URL da consulta
-    // pode ficar grande demais em alguns aparelhos/navegadores. Buscamos todas as
-    // fotos ativas e fazemos o vínculo localmente por produto_id.
-    const {data:fotos,error:fe}=await supabaseClient
-      .from('catalogo_fotos')
-      .select('produto_id,public_url,storage_path,ordem,content_hash,updated_at')
-      .eq('ativo',true)
-      .order('produto_id')
-      .order('ordem');
+    setStatus('Conectando ao catálogo…');
+    await carregarConfiguracaoFreteCatalogo();
 
-    if(fe){
-      console.warn('Fotos do catálogo não puderam ser lidas:',fe);
-    }else{
-      for(const f of (fotos||[])){
-        const produtoId=String(f.produto_id||'');
-        if(!map.has(produtoId)) continue;
-        let url=String(f.public_url||'').trim();
-        if(!url && f.storage_path){
-          url=supabaseClient.storage.from('gibiprints-fotos').getPublicUrl(f.storage_path).data.publicUrl||'';
+    setStatus('Buscando produtos…');
+    const productQuery='select=id,nome,categoria,descricao,precos,tamanhos,cores,ativo&ativo=eq.true&order=nome.asc';
+    const data=await supabaseRest('produtos',productQuery);
+    products=Array.isArray(data)?data:[];
+
+    if(products.length){
+      setStatus(`Buscando fotos de ${products.length} produto(s)…`);
+      const ids=new Set(products.map(p=>String(p.id)));
+      const map=new Map([...ids].map(id=>[id,[]]));
+      try{
+        // Busca as fotos ativas diretamente pela API REST.
+        // Não depende do SDK e não usa caminhos locais do aparelho.
+        const fotos=await supabaseRest('catalogo_fotos','select=produto_id,public_url,storage_path,ordem,content_hash,updated_at&ativo=eq.true&order=ordem.asc');
+        for(const f of (Array.isArray(fotos)?fotos:[])){
+          const produtoId=String(f.produto_id||'');
+          if(!map.has(produtoId))continue;
+          let url=String(f.public_url||'').trim();
+          if(!url && f.storage_path)url=publicStorageUrl(f.storage_path);
+          if(url){
+            const versao=f.updated_at||f.content_hash||'';
+            if(versao && !url.includes('?'))url += '?v='+encodeURIComponent(versao);
+            map.get(produtoId).push(url);
+          }
         }
-        if(url){
-          // Evita cache antigo quando uma foto é substituída mantendo o mesmo caminho.
-          const versao=f.updated_at||f.content_hash||'';
-          if(versao && !url.includes('?')) url += '?v='+encodeURIComponent(versao);
-          map.get(produtoId).push(url);
-        }
+      }catch(photoError){
+        console.warn('Fotos do catálogo indisponíveis:',photoError);
+        // O catálogo continua funcionando mesmo que a tabela de fotos falhe.
       }
+      products=products.map(p=>({...p,fotos:map.get(String(p.id))||[]}));
     }
-  }catch(photoError){console.warn('Fotos do catálogo indisponíveis:',photoError);}
-  products=products.map(p=>({...p,fotos:map.get(String(p.id))||[]}));
+
+    document.getElementById('grid').innerHTML=products.map(productCard).join('');
+    products.forEach(bindSwipeGallery);
+    status.textContent=products.length?`${products.length} produto(s) no catálogo`:'Nenhum produto ativo no catálogo.';
+    repriceCart();saveCart();
+  }catch(e){
+    console.error('CATÁLOGO V2:',e);
+    status.innerHTML='<div class="error"><strong>Não foi possível carregar o catálogo.</strong><br><small>'+esc(e?.message||'Erro desconhecido')+'</small><br><small style="display:block;margin-top:8px">Abra este arquivo publicado na Vercel/HTTPS e tente novamente.</small><button onclick="location.reload()" style="margin-top:10px;border:0;border-radius:10px;padding:10px 14px;background:var(--green);color:#fff;font-weight:900">Recarregar</button></div>';
+  }
 }
-document.getElementById('grid').innerHTML=products.map(productCard).join('');
-products.forEach(bindSwipeGallery);
-status.textContent=products.length?`${products.length} produto(s) no catálogo`:'Nenhum produto ativo no catálogo.';
-repriceCart();saveCart();
-}catch(e){
-console.error(e);
-status.innerHTML='<div class="error"><strong>Não foi possível carregar o catálogo.</strong><br><small>'+esc(e?.message||'Erro desconhecido')+'</small><br><button onclick="location.reload()" style="margin-top:10px;border:0;border-radius:10px;padding:10px 14px;background:var(--green);color:#fff;font-weight:900">Recarregar</button></div>'
-}}
 renderCart();load();
 </script>
 
