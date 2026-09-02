@@ -33,6 +33,15 @@ table{width:100%;border-collapse:collapse}th,td{padding:7px;border-bottom:1px so
 .tabbtn{flex:1;border:1px solid #cbd7c8;background:#fff;border-radius:10px;padding:11px;font-weight:900;color:#24502f}.tabbtn.active{background:#0b6b35;color:#fff;border-color:#0b6b35}
 .product-admin-grid{display:grid;gap:10px}.product-admin-card{border:1px solid #d6dfd4;border-radius:12px;padding:12px;background:#fff}.product-admin-head{display:flex;justify-content:space-between;gap:8px;align-items:flex-start}.product-admin-actions{display:flex;flex-direction:column;gap:6px;min-width:92px}.product-admin-actions button{width:100%;padding:8px 10px;font-size:13px}.product-admin-actions .delete-product{border-color:#efc6c6;color:#a32323;background:#fff4f4}.price-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin-top:10px}.price-grid input{font-weight:800}.pill{display:inline-block;padding:4px 8px;border-radius:999px;background:#eef5eb;color:#176a38;font-size:11px;font-weight:800}.pill.off{background:#f4eeee;color:#9b2020}@media(max-width:680px){.price-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.tabbar{top:0;position:sticky}}
 .danger{border-color:#d66;color:#a11!important}.catalog-admin-card .cat-actions{flex-wrap:wrap}.catalog-admin-card .cat-actions button{min-width:0}.photo-order{position:absolute;left:5px;top:5px;background:rgba(0,0,0,.65);color:#fff;border-radius:999px;padding:3px 7px;font-size:11px;font-weight:900}.photo-move{position:absolute;left:5px;bottom:5px;display:flex;gap:4px}.photo-move button{position:static!important;width:auto!important;height:28px!important;border-radius:8px!important;background:#fff!important;padding:0 8px!important}.photo-move button:disabled{opacity:.35}.catalog-photo>button:last-child{z-index:3}
+
+/* GIBIPRINTS — Linhas / Mostruário V1 */
+.linha-modal{position:fixed;inset:0;background:rgba(3,20,12,.68);z-index:9999;display:none;align-items:flex-start;justify-content:center;padding:18px;overflow:auto}
+.linha-modal.open{display:flex}.linha-modal-card{width:min(1080px,100%);margin:12px auto;background:#fff;border-radius:20px;box-shadow:0 24px 70px rgba(0,0,0,.25);overflow:hidden}
+.linha-modal-head{background:#062519;border-top:8px solid #f7be14;color:#fff;padding:18px 20px;display:flex;justify-content:space-between;gap:12px;align-items:center}.linha-modal-head h2{color:#fff;margin:0}.linha-modal-head small{color:#f7be14;font-weight:700}
+.linha-modal-body{padding:18px}.linha-grid{display:grid;grid-template-columns:1.7fr 1fr;gap:12px}.linha-model-list{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin-top:12px}.linha-model-card{border:1px solid #d5dfd8;border-radius:14px;padding:9px;background:#fff}.linha-model-card img{width:100%;aspect-ratio:1;object-fit:cover;border-radius:9px;background:#eef3ef}.linha-model-card h4{font-size:12px;margin:7px 0 5px}.linha-model-card p{font-size:10px;line-height:1.45;margin:0;color:#526057}.linha-pill{display:inline-block;background:#eaf3ed;color:#075b35;border-radius:20px;padding:4px 7px;font-size:9px;font-weight:800;margin-top:6px}.linha-upload{border:2px dashed #c9d6cd;border-radius:12px;padding:12px;text-align:center;background:#fbfdfb}.linha-preview{margin-top:16px;border:1px solid #d5dfd8;border-radius:16px;padding:12px;background:#fff}.linha-preview-title{background:#075b35;color:#fff;border-radius:30px;padding:12px;text-align:center;font-size:22px;font-weight:800}.linha-preview-hero{display:grid;grid-template-columns:2fr 1fr;gap:12px;margin-top:12px}.linha-preview-hero img{width:100%;height:330px;object-fit:cover;border-radius:13px;background:#eef3ef}.linha-benefits{border:1px solid #d5dfd8;border-radius:13px;padding:14px}.linha-benefits div{margin-bottom:12px;font-size:12px}.linha-benefits b{display:block;color:#075b35}.linha-empty{padding:22px;text-align:center;color:#68756d;border:2px dashed #cbd8cf;border-radius:12px}.linha-row-actions{display:flex;flex-wrap:wrap;gap:9px;margin-top:12px}
+@media(max-width:850px){.linha-grid,.linha-preview-hero{grid-template-columns:1fr}.linha-model-list{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:500px){.linha-model-list{grid-template-columns:1fr}.linha-modal{padding:6px}.linha-modal-body{padding:12px}}
+.linha-pill{line-height:1.25;text-transform:uppercase}
 </style>
 
 <link rel="manifest" href="manifest.json">
@@ -133,6 +142,24 @@ window.addEventListener('unhandledrejection', function(e){
   <div id="cloudStatus" style="color:#68736b;font-size:11px;margin-top:8px;text-align:center;"></div>
  </div>
 </div>
+
+<div id="linhaModal" class="linha-modal" aria-hidden="true">
+ <div class="linha-modal-card">
+  <div class="linha-modal-head"><div><h2>➕ Cadastrar nova linha</h2><small>MOSTRUÁRIO SEM VALORES</small></div><button class="secondary" type="button" onclick="fecharLinhaModal()">✕ Fechar</button></div>
+  <div class="linha-modal-body">
+   <div class="linha-grid">
+    <div><label>Título da linha</label><input id="linhaTitulo" placeholder="Ex.: PADARIA" autocomplete="off"></div>
+    <div><label>Modelo do produto</label><select id="linhaTipo"></select></div>
+   </div>
+   <div class="linha-upload" style="margin-top:12px"><b>📷 Foto do modelo selecionado</b><div class="muted" style="margin:5px 0 9px">Adicione uma ou mais fotos para este modelo.</div><button class="secondary" type="button" onclick="adicionarFotoLinha()">📷 Adicionar foto</button><input id="linhaFotoInput" type="file" accept="image/jpeg,image/png,image/webp" multiple hidden></div>
+   <div id="linhaFotosTemporarias" class="linha-model-list"></div>
+   <div class="linha-row-actions"><button class="primary" type="button" onclick="adicionarModeloLinha()">➕ Adicionar modelo à linha</button><button class="secondary" type="button" onclick="salvarLinhaAtual()">💾 Salvar linha</button><button class="secondary" type="button" onclick="limparEditorLinha()">🧹 Limpar</button><button class="primary" type="button" onclick="exportarLinhaMostruario()">📤 Enviar Linha</button></div>
+   <div class="muted" style="margin-top:8px">Depois de <b>LINHA:</b> entra exatamente o título definido. Preços do cadastro de produtos nunca são usados nesta exportação.</div>
+   <div class="linha-preview"><div class="linha-preview-title">LINHA: <span id="linhaPreviewTitulo">NOVA LINHA</span></div><div class="linha-preview-hero"><img id="linhaHeroImg" alt="Imagem principal da linha"><div class="linha-benefits"><div><b>PERSONALIZADO</b>Sua marca com qualidade profissional</div><div><b>CONFORTO</b>Tecidos adequados para cada modelo</div><div><b>ESTAMPAS</b>Personalização com identidade visual</div><div><b>RESISTÊNCIA</b>Acabamento para uso profissional</div><div><b>IDEAL PARA</b>Empresas, equipes e eventos</div></div></div><div id="linhaModelosPreview" class="linha-model-list"></div></div>
+  </div>
+ </div>
+</div>
+
 <main>
 <div class="tabbar">
   <button id="tabOrcamento" class="tabbtn active" type="button" onclick="showTab('orcamento')">🧾 Orçamento</button>
@@ -145,7 +172,8 @@ window.addEventListener('unhandledrejection', function(e){
 <div id="produtosPanel" class="card hidden">
   <h2>📦 Cadastro e edição de produtos</h2>
   <p class="muted">Altere os preços sem mexer no código. Cada produto possui as quatro faixas: 1–9, 10–19, 20–49 e 50+.</p>
-  <div class="actions"><button class="primary" type="button" onclick="novoProdutoAdmin()">➕ Novo produto</button><button class="secondary" type="button" onclick="sincronizarCatalogoAtual()">☁️ Enviar catálogo atual para a nuvem</button><button class="secondary" type="button" onclick="carregarProdutosNuvem(true)">🔄 Atualizar da nuvem</button></div>
+  <div class="actions"><button class="primary" type="button" onclick="novoProdutoAdmin()">➕ Novo produto</button><button class="secondary" type="button" onclick="abrirNovaLinha()">➕ Nova linha</button><button class="secondary" type="button" onclick="sincronizarCatalogoAtual()">☁️ Enviar catálogo atual para a nuvem</button><button class="secondary" type="button" onclick="carregarProdutosNuvem(true)">🔄 Atualizar da nuvem</button></div>
+  <div id="linhasAdminPanel" class="card hidden" style="margin-top:12px;background:#f8fbf7;"></div>
   <div id="produtoAdminForm" class="card hidden" style="margin-top:12px;background:#f8fbf7;">
     <h3 id="produtoAdminTitulo" style="margin-top:0">Novo produto</h3>
     <div class="grid">
@@ -300,6 +328,7 @@ window.addEventListener('unhandledrejection', function(e){
 </div>
 
 <div id="catalogExportToolbar" class="card" style="background:#f8fbf7;margin-bottom:14px;"><h3 style="margin:0 0 10px">📤 Exportar catálogo</h3><div id="catalogExportButtons" class="actions"></div></div>
+<div id="catalogLinhasPanel" class="card" style="background:#fffdf4;margin-bottom:14px;border:2px solid #eadc9d;"></div>
 <div id="catalogAdminGrid" class="catalog-admin-grid"></div>
 </section>
 </main>
@@ -865,7 +894,9 @@ async function montarSnapshotBackup(){
  const pedidos=(await localDbGetAll('pedidos')).filter(p=>p?.sync_id!==CLOUD_BACKUP_SYNC_ID);
  const produtos=Object.fromEntries(Object.entries(PRODUCTS||{}).map(([nome,precos])=>[nome,Array.isArray(precos)?precos.map(Number):[]]));
  const meta=JSON.parse(JSON.stringify(PRODUCT_META||{}));
- return {versao:2,tipo:'GIBIPRINTS_CLOUD_BACKUP',backupId:CLOUD_BACKUP_SYNC_ID,exportadoEm:new Date().toISOString(),clientes,pedidos,produtos,productMeta:meta};
+ let linhas=[];
+ try{linhas=await linhaAll();}catch(e){console.warn('Backup das linhas:',e);}
+ return {versao:3,tipo:'GIBIPRINTS_CLOUD_BACKUP',backupId:CLOUD_BACKUP_SYNC_ID,exportadoEm:new Date().toISOString(),clientes,pedidos,produtos,productMeta:meta,linhas};
 }
 
 async function salvarSnapshotBackupNuvem(snapshot){
@@ -894,23 +925,38 @@ async function restaurarUltimoBackupNuvem(){
   if(!snapshot||snapshot.tipo!=='GIBIPRINTS_CLOUD_BACKUP')throw new Error('Nenhum backup completo da nuvem foi encontrado.');
   const clientes=Array.isArray(snapshot.clientes)?snapshot.clientes:[];
   const pedidos=Array.isArray(snapshot.pedidos)?snapshot.pedidos:[];
+  const linhas=Array.isArray(snapshot.linhas)?snapshot.linhas:[];
   await localDbClear('clientes');
   await localDbClear('pedidos');
   for(const c of clientes)await localDbPut('clientes',c);
   for(const p of pedidos)await localDbPut('pedidos',p);
+  await substituirLinhasLocais(linhas);
   PRODUCTS={...(snapshot.produtos||{})};
   PRODUCT_META={...(snapshot.productMeta||{})};
   persistProductsLocal();
   cloudStoresSynced.add('clientes');
   cloudStoresSynced.add('pedidos');
   cloudStoresSynced.add('produtos');
-  renderItems();renderProdutoAdmin();renderResumo();await renderHistorico();
+  renderItems();renderProdutoAdmin();renderResumo();renderLinhasAdmin();await renderHistorico();
   cloudMsg('Último backup restaurado da nuvem.');
-  alert(`Restauração concluída.\n\nClientes: ${clientes.length}\nPedidos: ${pedidos.length}\nProdutos: ${Object.keys(PRODUCTS).length}`);
+  alert(`Restauração concluída.\n\nClientes: ${clientes.length}\nPedidos: ${pedidos.length}\nProdutos: ${Object.keys(PRODUCTS).length}\nLinhas: ${linhas.length}`);
  }catch(e){console.error('Restauração da nuvem:',e);cloudMsg('Erro ao restaurar o backup.');alert('Não foi possível restaurar o último backup da nuvem.\n\n'+(e?.message||e));}
 }
 
-async function restaurarBackup(ev){const f=ev.target.files?.[0];if(!f)return;try{const data=JSON.parse(await f.text());await localDbClear('clientes');await localDbClear('pedidos');for(const c of (data.clientes||[]))await localDbPut('clientes',c);for(const p of (data.pedidos||[]))await localDbPut('pedidos',p);if(data.produtos){PRODUCTS={...(data.produtos||{})};PRODUCT_META={...(data.productMeta||{})};persistProductsLocal();}cloudStoresSynced.add('clientes');cloudStoresSynced.add('pedidos');cloudStoresSynced.add('produtos');await renderHistorico();renderItems();renderProdutoAdmin();renderResumo();alert('Backup restaurado com sucesso.');}catch(e){alert('Não foi possível restaurar o backup.\n\n'+(e?.message||e));}ev.target.value='';}
+async function restaurarBackup(ev){
+ const f=ev.target.files?.[0];if(!f)return;
+ try{
+  const data=JSON.parse(await f.text());
+  await localDbClear('clientes');await localDbClear('pedidos');
+  for(const c of (data.clientes||[]))await localDbPut('clientes',c);
+  for(const p of (data.pedidos||[]))await localDbPut('pedidos',p);
+  if(data.produtos){PRODUCTS={...(data.produtos||{})};PRODUCT_META={...(data.productMeta||{})};persistProductsLocal();}
+  if(Array.isArray(data.linhas))await substituirLinhasLocais(data.linhas);
+  cloudStoresSynced.add('clientes');cloudStoresSynced.add('pedidos');cloudStoresSynced.add('produtos');
+  await renderHistorico();renderItems();renderProdutoAdmin();renderResumo();renderLinhasAdmin();
+  alert(`Backup restaurado com sucesso.\n\nClientes: ${(data.clientes||[]).length}\nPedidos: ${(data.pedidos||[]).length}\nProdutos: ${Object.keys(data.produtos||PRODUCTS||{}).length}\nLinhas: ${(data.linhas||[]).length}`);
+ }catch(e){alert('Não foi possível restaurar o backup.\n\n'+(e?.message||e));}ev.target.value='';
+}
 const TAMANHOS_PROIBIDOS_GIBI=['G1','G2','G3','XG','XXG'];
 
 function normalizarTamanhoGibi(t){
@@ -1374,7 +1420,7 @@ else iniciarGIBIPRINTS();
    Cada foto possui ID próprio e ordem própria. Reordenar uma foto não renomeia
    nem substitui as outras fotos.
 */
-const CATALOG_KEY='GIBIPRINTS_CATALOGO_V12';
+const CATALOG_KEY='GIBIPRINTS_CATALOGO_V13';
 const CATALOG_DB_NAME='GIBIPRINTS_CATALOGO_DB_V8';
 const CATALOG_DB_VERSION=2;
 const CATALOG_STORE='catalogo';
@@ -1891,11 +1937,26 @@ async function sincronizarCatalogoComProdutos(){
   return base;
 }
 
+async function renderCatalogLinhas(){
+  const panel=document.getElementById('catalogLinhasPanel');if(!panel)return;
+  try{
+    const arr=(await linhaAll()).sort((a,b)=>String(b.atualizadoEm).localeCompare(String(a.atualizadoEm)));
+    let body='<div style="display:flex;justify-content:space-between;gap:10px;align-items:center;flex-wrap:wrap"><div><h3 style="margin:0">📚 Linhas / Mostruários</h3><div class="muted" style="margin-top:4px">As linhas ficam disponíveis aqui para consulta e envio, mas <b>não entram no PDF/JPG do catálogo</b>.</div></div><small class="muted">'+arr.length+' linha(s)</small></div>';
+    if(!arr.length){body+='<div class="linha-empty" style="margin-top:12px">Nenhuma linha cadastrada. Crie uma em <b>Produtos → Nova linha</b>.</div>';panel.innerHTML=body;return;}
+    body+='<div class="linha-model-list" style="margin-top:12px">'+arr.map(l=>{
+      const id=escAttr(l.id),titulo=esc(l.titulo||'Nova Linha'),qtd=Array.isArray(l.modelos)?l.modelos.length:0,thumb=escAttr(l.modelos?.[0]?.fotos?.[0]||'');
+      return '<article class="linha-model-card" style="min-width:220px">'+(thumb?'<img src="'+thumb+'" alt="" style="width:100%;height:150px;object-fit:cover;border-radius:12px;margin-bottom:8px">':'')+'<div class="linha-pill">LINHA</div><h4 style="margin:7px 0 3px">'+titulo+'</h4><p>'+qtd+' modelo(s) • <b>Não exportada com o catálogo</b></p><div class="linha-row-actions"><button class="secondary" type="button" onclick="editarLinhaSalva(\''+id+'\')">✏️ Editar</button><button class="primary" type="button" onclick="enviarLinhaSalva(\''+id+'\')">📤 Enviar Linha</button></div></article>';
+    }).join('')+'</div>';
+    panel.innerHTML=body;
+  }catch(e){panel.innerHTML='<div class="muted">Não foi possível carregar as linhas.</div>';}
+}
+
 async function renderCatalogAdmin(){
   const grid=document.getElementById('catalogAdminGrid');if(!grid)return;
   try{
     const d=await sincronizarCatalogoComProdutos();
     renderCatalogExportToolbar();
+    await renderCatalogLinhas();
     const produtos=d.produtos||[];
     if(!produtos.length){grid.innerHTML='<div class="muted" style="padding:20px">Nenhum produto cadastrado. Vá em <b>Produtos</b> para adicionar.</div>';return;}
 
@@ -2542,6 +2603,104 @@ async function confirmarPedidoPublico(){const ids=['pubNome','pubWhats','pubRua'
 
 /* Teste de integridade: o catálogo pode ser salvo sem tocar nos registros de clientes/pedidos. */
 window.addEventListener('unhandledrejection',e=>{if(String(e?.reason?.message||e?.reason||'').includes('GIBIPRINTS_CATALOGO'))console.warn('Catálogo:',e.reason);});
+
+/* ==================== GIBIPRINTS — LINHAS / MOSTRUÁRIO ==================== */
+const LINHAS_DB_NAME='GIBIPRINTS_LINHAS_DB_V1';
+const LINHAS_DB_VERSION=1;
+const LINHAS_STORE='linhas';
+const LINHAS_TYPES={
+  'Gola Polo Masculino':['65% Poliéster / 35% Algodão','Gola e punhos canelados','Botões personalizados','Alta durabilidade'],
+  'Gola Polo Feminino':['65% Poliéster / 35% Algodão','Modelagem acinturada','Gola e punhos canelados','Conforto e elegância'],
+  'Regata':['100% Poliéster Dry Fit','Leve e respirável','Secagem rápida','Ideal para esporte e lazer'],
+  'Camisa Comum':['100% Algodão ou Poliéster','Fio 30.1 penteado','Gola redonda reforçada','Toque macio e leve'],
+  'Baby Look':['100% Algodão ou Poliéster','Modelagem feminina','Gola redonda reforçada','Caimento confortável']
+};
+let linhasDbPromise=null, linhaAtual=null, linhaFotosTemporarias=[];
+function abrirLinhasDb(){
+  if(linhasDbPromise)return linhasDbPromise;
+  linhasDbPromise=new Promise((resolve,reject)=>{
+    const r=indexedDB.open(LINHAS_DB_NAME,LINHAS_DB_VERSION);
+    r.onupgradeneeded=()=>{const db=r.result;if(!db.objectStoreNames.contains(LINHAS_STORE))db.createObjectStore(LINHAS_STORE,{keyPath:'id'});};
+    r.onsuccess=()=>resolve(r.result);r.onerror=()=>reject(r.error||new Error('IndexedDB das linhas indisponível.'));
+  });return linhasDbPromise;
+}
+async function linhaGet(id){const db=await abrirLinhasDb();return new Promise((res,rej)=>{const q=db.transaction(LINHAS_STORE,'readonly').objectStore(LINHAS_STORE).get(id);q.onsuccess=()=>res(q.result||null);q.onerror=()=>rej(q.error);});}
+async function linhaPut(obj){const db=await abrirLinhasDb();return new Promise((res,rej)=>{const q=db.transaction(LINHAS_STORE,'readwrite').objectStore(LINHAS_STORE).put(obj);q.onsuccess=()=>res(obj);q.onerror=()=>rej(q.error);});}
+async function linhaAll(){const db=await abrirLinhasDb();return new Promise((res,rej)=>{const q=db.transaction(LINHAS_STORE,'readonly').objectStore(LINHAS_STORE).getAll();q.onsuccess=()=>res(q.result||[]);q.onerror=()=>rej(q.error);});}
+async function linhaDelete(id){const db=await abrirLinhasDb();return new Promise((res,rej)=>{const q=db.transaction(LINHAS_STORE,'readwrite').objectStore(LINHAS_STORE).delete(id);q.onsuccess=()=>res(true);q.onerror=()=>rej(q.error);});}
+async function substituirLinhasLocais(linhas){
+ const db=await abrirLinhasDb();
+ await new Promise((resolve,reject)=>{const tx=db.transaction(LINHAS_STORE,'readwrite');const st=tx.objectStore(LINHAS_STORE);const q=st.clear();q.onerror=()=>reject(q.error);tx.oncomplete=()=>resolve();tx.onerror=()=>reject(tx.error||new Error('Falha ao limpar as linhas locais.'));});
+ for(const l of (Array.isArray(linhas)?linhas:[])){if(l&&l.id)await linhaPut(l);}
+}
+function popularTiposLinha(){const s=document.getElementById('linhaTipo');if(!s)return;s.innerHTML='';Object.keys(LINHAS_TYPES).forEach(t=>s.add(new Option(t,t)));}
+function abrirNovaLinha(){
+  const m=document.getElementById('linhaModal');if(!m)return;
+  linhaAtual={id:crypto.randomUUID(),titulo:'',modelos:[],criadoEm:new Date().toISOString(),atualizadoEm:new Date().toISOString()};linhaFotosTemporarias=[];
+  popularTiposLinha();document.getElementById('linhaTitulo').value='';document.getElementById('linhaFotoInput').value='';renderLinhaFotosTemp();renderLinhaPreview();m.classList.add('open');m.setAttribute('aria-hidden','false');setTimeout(()=>document.getElementById('linhaTitulo')?.focus(),30);
+}
+function fecharLinhaModal(){const m=document.getElementById('linhaModal');if(m){m.classList.remove('open');m.setAttribute('aria-hidden','true');}}
+function limparEditorLinha(){if(!linhaAtual)return;linhaAtual.modelos=[];linhaFotosTemporarias=[];renderLinhaFotosTemp();renderLinhaPreview();}
+function adicionarFotoLinha(){document.getElementById('linhaFotoInput')?.click();}
+async function obterImagemLinha(file){return await new Promise((resolve,reject)=>{const fr=new FileReader();fr.onload=()=>resolve(fr.result);fr.onerror=reject;fr.readAsDataURL(file);});}
+async function processarFotosLinhaInput(){const input=document.getElementById('linhaFotoInput');const files=[...(input?.files||[])].slice(0,5-linhaFotosTemporarias.length);for(const f of files){try{linhaFotosTemporarias.push({id:crypto.randomUUID(),src:await obterImagemLinha(f)});}catch(e){}}if(input)input.value='';renderLinhaFotosTemp();}
+function renderLinhaFotosTemp(){const el=document.getElementById('linhaFotosTemporarias');if(!el)return;el.innerHTML=linhaFotosTemporarias.length?linhaFotosTemporarias.map((x,i)=>`<div class="linha-model-card"><img src="${escAttr(x.src)}" alt="Foto ${i+1}"><button class="secondary" type="button" style="width:100%;margin-top:6px;padding:7px" onclick="removerFotoLinhaTemp('${x.id}')">✕ Remover</button></div>`).join(''):'<div class="linha-empty" style="grid-column:1/-1">Nenhuma foto temporária. A primeira foto será usada como imagem principal do modelo.</div>';}
+function removerFotoLinhaTemp(id){linhaFotosTemporarias=linhaFotosTemporarias.filter(x=>x.id!==id);renderLinhaFotosTemp();}
+function adicionarModeloLinha(){
+  if(!linhaAtual)return;const titulo=(document.getElementById('linhaTitulo')?.value||'').trim();if(!titulo){alert('Informe o título da linha.');return;}const tipo=document.getElementById('linhaTipo')?.value||'';if(!tipo){alert('Selecione o modelo do produto.');return;}if(!linhaFotosTemporarias.length){alert('Adicione pelo menos uma foto para este modelo.');return;}
+  linhaAtual.titulo=titulo;linhaAtual.modelos.push({id:crypto.randomUUID(),tipo,especificacoes:[...(LINHAS_TYPES[tipo]||[])],fotos:linhaFotosTemporarias.map(x=>x.src)});linhaFotosTemporarias=[];renderLinhaFotosTemp();renderLinhaPreview();
+}
+function renderLinhaPreview(){
+  const titulo=(document.getElementById('linhaTitulo')?.value||linhaAtual?.titulo||'NOVA LINHA').trim()||'NOVA LINHA';const t=document.getElementById('linhaPreviewTitulo');if(t)t.textContent=titulo;
+  const hero=document.getElementById('linhaHeroImg'),modelos=document.getElementById('linhaModelosPreview');const ms=linhaAtual?.modelos||[];if(hero)hero.src=ms[0]?.fotos?.[0]||'';
+  if(modelos)modelos.innerHTML=ms.length?ms.map((m,i)=>`<article class="linha-model-card"><img src="${escAttr(m.fotos[0]||'')}" alt="${escAttr(m.tipo)}"><h4>${i+1}. ${esc(m.tipo)}</h4><p><b>Especificações</b><br>• ${(m.especificacoes||[]).map(esc).join('<br>• ')}</p><span class="linha-pill">QUANTO MAIOR A QUANTIDADE, MELHOR O VALOR POR PEÇA</span><button class="secondary" type="button" style="width:100%;margin-top:7px;padding:7px" onclick="removerModeloLinha('${m.id}')">Remover</button></article>`).join(''):'<div class="linha-empty" style="grid-column:1/-1">Os modelos adicionados aparecerão aqui.</div>';
+}
+function removerModeloLinha(id){if(!linhaAtual)return;linhaAtual.modelos=linhaAtual.modelos.filter(m=>m.id!==id);renderLinhaPreview();}
+async function salvarLinhaAtual(){
+  if(!linhaAtual)return;const titulo=(document.getElementById('linhaTitulo')?.value||linhaAtual.titulo||'').trim();if(!titulo){alert('Informe o título da linha.');return;}if(!linhaAtual.modelos.length){alert('Adicione pelo menos um modelo à linha.');return;}linhaAtual.titulo=titulo;linhaAtual.atualizadoEm=new Date().toISOString();await linhaPut(linhaAtual);if(sbSession){try{await salvarSnapshotBackupNuvem(await montarSnapshotBackup());cloudMsg('Linha salva e incluída no backup da nuvem.');}catch(e){console.warn('Backup da linha na nuvem:',e);cloudMsg('Linha salva neste aparelho; backup da nuvem pendente.');}}alert('Linha salva com sucesso.');renderLinhasAdmin();renderCatalogLinhas();
+}
+async function renderLinhasAdmin(){
+  const panel=document.getElementById('linhasAdminPanel');if(!panel)return;
+  try{
+    const arr=(await linhaAll()).sort((a,b)=>String(b.atualizadoEm).localeCompare(String(a.atualizadoEm)));
+    let body='<div style="display:flex;justify-content:space-between;gap:10px;align-items:center;flex-wrap:wrap"><h3 style="margin:0">📚 Linhas / Mostruários</h3><small class="muted">'+arr.length+' linha(s) salva(s)</small></div>';
+    if(arr.length){
+      body+='<div class="linha-model-list">'+arr.map(l=>{
+        const lid=escAttr(l.id); const nome=esc(l.titulo); const qtd=l.modelos?.length||0;
+        return '<article class="linha-model-card"><div class="linha-pill">LINHA</div><h4>'+nome+'</h4><p>'+qtd+' modelo(s)</p><div class="linha-row-actions">'
+          +'<button class="secondary" type="button" onclick="editarLinhaSalva(\''+lid+'\')">✏️ Editar</button>'
+          +'<button class="primary" type="button" onclick="enviarLinhaSalva(\''+lid+'\')">📤 Enviar</button>'
+          +'<button class="secondary" type="button" onclick="excluirLinhaSalva(\''+lid+'\')">🗑️ Excluir</button>'
+          +'</div></article>';
+      }).join('')+'</div>';
+    }else body+='<div class="linha-empty" style="margin-top:12px">Nenhuma linha cadastrada ainda.</div>';
+    panel.innerHTML=body;
+  }catch(e){panel.innerHTML='<div class="muted">Não foi possível carregar as linhas salvas.</div>';}
+}
+async function editarLinhaSalva(id){const l=await linhaGet(id);if(!l)return;linhaAtual=JSON.parse(JSON.stringify(l));linhaFotosTemporarias=[];popularTiposLinha();document.getElementById('linhaTitulo').value=l.titulo||'';renderLinhaFotosTemp();renderLinhaPreview();document.getElementById('linhaModal').classList.add('open');document.getElementById('linhaModal').setAttribute('aria-hidden','false');}
+async function enviarLinhaSalva(id){const l=await linhaGet(id);if(!l)return;linhaAtual=JSON.parse(JSON.stringify(l));document.getElementById('linhaTitulo').value=l.titulo||'';renderLinhaPreview();await exportarLinhaMostruario();}
+async function excluirLinhaSalva(id){if(!confirm('Excluir esta linha e seus modelos?'))return;await linhaDelete(id);renderLinhasAdmin();}
+function escAttr(v){return esc(v).replace(/`/g,'&#96;')}
+async function exportarLinhaMostruario(){
+  if(!linhaAtual||!linhaAtual.modelos?.length){alert('Adicione pelo menos um modelo à linha.');return;}
+  const titulo=(document.getElementById('linhaTitulo')?.value||linhaAtual.titulo||'NOVA LINHA').trim();linhaAtual.titulo=titulo;
+  const modelos=linhaAtual.modelos.slice();const W=1240,H=1754;const canvas=document.createElement('canvas');canvas.width=W;canvas.height=H;const ctx=canvas.getContext('2d');
+  const load=src=>new Promise(r=>{if(!src)return r(null);const im=new Image();im.onload=()=>r(im);im.onerror=()=>r(null);im.src=src;});
+  const round=(x,y,w,h,r,fill=true)=>{ctx.beginPath();ctx.roundRect(x,y,w,h,r);if(fill)ctx.fill();};
+  ctx.fillStyle='#f7f7f2';ctx.fillRect(0,0,W,H);ctx.fillStyle='#062519';ctx.fillRect(0,0,W,195);ctx.fillStyle='#f7be14';ctx.fillRect(0,0,W,8);
+  ctx.fillStyle='#fff';ctx.font='700 42px Arial';ctx.fillText('GIBIPRINTS',72,70);ctx.fillStyle='#f7be14';ctx.font='700 20px Arial';ctx.fillText('PARA EMPRESAS, GRUPOS E EVENTOS',72,104);ctx.fillStyle='#fff';ctx.font='18px Arial';ctx.fillText('Cada estampa conta uma história',72,137);
+  ctx.fillStyle='#075b35';round(55,220,1130,68,34);ctx.fillStyle='#fff';ctx.font='700 30px Arial';ctx.textAlign='center';ctx.fillText('LINHA: '+titulo.toUpperCase(),620,265);ctx.textAlign='left';
+  const heroSrc=modelos[0]?.fotos?.[0]||'';const hero=await load(heroSrc);ctx.fillStyle='#fff';round(55,315,730,580,22);if(hero){const sc=Math.min(700/hero.width,550/hero.height),dw=hero.width*sc,dh=hero.height*sc;ctx.drawImage(hero,70+(700-dw)/2,330+(550-dh)/2,dw,dh);}else{ctx.fillStyle='#68756d';ctx.font='22px Arial';ctx.textAlign='center';ctx.fillText('Imagem não cadastrada',420,600);ctx.textAlign='left'}
+  ctx.fillStyle='#fff';round(805,315,380,580,22);const bs=[['PERSONALIZADO','Sua marca com qualidade profissional'],['CONFORTO','Tecidos adequados para cada modelo'],['ESTAMPAS','Personalização com identidade visual'],['RESISTÊNCIA','Acabamento para uso profissional'],['IDEAL PARA','Empresas, equipes e eventos']];let by=370;bs.forEach(b=>{ctx.fillStyle='#075b35';ctx.font='700 19px Arial';ctx.fillText(b[0],835,by);ctx.fillStyle='#28352d';ctx.font='16px Arial';ctx.fillText(b[1],835,by+25);by+=105;});
+  const show=modelos.slice(0,5),gap=12,cw=(1130-gap*4)/5,y=930;for(let i=0;i<show.length;i++){const m=show[i],x=55+i*(cw+gap);ctx.fillStyle='#fff';round(x,y,cw,650,17);const im=await load(m.fotos?.[0]);if(im){const sc=Math.min((cw-18)/im.width,260/im.height),dw=im.width*sc,dh=im.height*sc;ctx.drawImage(im,x+9+(cw-18-dw)/2,y+9+(260-dh)/2,dw,dh);}ctx.fillStyle='#075b35';ctx.font='700 14px Arial';ctx.fillText((i+1)+'. '+m.tipo,x+10,y+292);ctx.fillStyle='#27332c';ctx.font='11px Arial';ctx.fillText('Especificações',x+10,y+320);(m.especificacoes||[]).slice(0,5).forEach((t,j)=>ctx.fillText('• '+t,x+10,y+343+j*22));ctx.fillStyle='#075b35';ctx.font='700 8px Arial';ctx.fillText('QUANTO MAIOR A QUANTIDADE, MELHOR O VALOR POR PEÇA',x+10,y+470);ctx.fillText('DO PEDIDO',x+10,y+487);}
+  ctx.fillStyle='#062519';ctx.fillRect(0,1690,W,64);ctx.fillStyle='#fff';ctx.font='700 17px Arial';ctx.textAlign='center';ctx.fillText('WhatsApp (21) 98251-1405   |   Instagram @GIBIPRINTS   |   Benfica — Rio de Janeiro',620,1730);ctx.textAlign='left';
+  const blob=await new Promise((res,rej)=>canvas.toBlob(b=>b?res(b):rej(new Error('Não foi possível criar o JPG.')),'image/jpeg',.95));const safe=titulo.replace(/[^a-z0-9]+/gi,'_').replace(/^_|_$/g,'')||'Linha';const file=new File([blob],`GIBIPRINTS_Linha_${safe}.jpg`,{type:'image/jpeg'});
+  try{if(navigator.share&&navigator.canShare&&navigator.canShare({files:[file]})){await navigator.share({title:`GIBIPRINTS — Linha ${titulo}`,text:`Mostruário: ${titulo} — sem valores`,files:[file]});return;}}catch(e){}const url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=file.name;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),3000);
+}
+(function iniciarModuloLinhas(){
+  try{document.getElementById('linhaFotoInput')?.addEventListener('change',processarFotosLinhaInput);document.getElementById('linhaTitulo')?.addEventListener('input',()=>{if(linhaAtual)linhaAtual.titulo=document.getElementById('linhaTitulo').value.trim();renderLinhaPreview();});abrirLinhasDb().then(renderLinhasAdmin).catch(()=>{});}catch(e){console.warn('Módulo Linhas:',e);}
+})();
+
 </script>
 </body>
 </html>
