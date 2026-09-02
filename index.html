@@ -38,7 +38,7 @@ table{width:100%;border-collapse:collapse}th,td{padding:7px;border-bottom:1px so
 .linha-modal{position:fixed;inset:0;background:rgba(3,20,12,.68);z-index:9999;display:none;align-items:flex-start;justify-content:center;padding:18px;overflow:auto}
 .linha-modal.open{display:flex}.linha-modal-card{width:min(1080px,100%);margin:12px auto;background:#fff;border-radius:20px;box-shadow:0 24px 70px rgba(0,0,0,.25);overflow:hidden}
 .linha-modal-head{background:#062519;border-top:8px solid #f7be14;color:#fff;padding:18px 20px;display:flex;justify-content:space-between;gap:12px;align-items:center}.linha-modal-head h2{color:#fff;margin:0}.linha-modal-head small{color:#f7be14;font-weight:700}
-.linha-modal-body{padding:18px}.linha-grid{display:grid;grid-template-columns:1.7fr 1fr;gap:12px}.linha-model-list{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin-top:12px}.linha-model-card{border:1px solid #d5dfd8;border-radius:14px;padding:9px;background:#fff}.linha-model-card img{width:100%;aspect-ratio:1;object-fit:cover;border-radius:9px;background:#eef3ef}.linha-model-card h4{font-size:12px;margin:7px 0 5px}.linha-model-card p{font-size:10px;line-height:1.45;margin:0;color:#526057}.linha-pill{display:inline-block;background:#eaf3ed;color:#075b35;border-radius:20px;padding:4px 7px;font-size:9px;font-weight:800;margin-top:6px}.linha-upload{border:2px dashed #c9d6cd;border-radius:12px;padding:12px;text-align:center;background:#fbfdfb}.linha-preview{margin-top:16px;border:1px solid #d5dfd8;border-radius:16px;padding:12px;background:#fff}.linha-preview-title{background:#075b35;color:#fff;border-radius:30px;padding:12px;text-align:center;font-size:22px;font-weight:800}.linha-preview-hero{display:grid;grid-template-columns:2fr 1fr;gap:12px;margin-top:12px}.linha-preview-hero img{width:100%;height:330px;object-fit:cover;border-radius:13px;background:#eef3ef}.linha-benefits{border:1px solid #d5dfd8;border-radius:13px;padding:14px}.linha-benefits div{margin-bottom:12px;font-size:12px}.linha-benefits b{display:block;color:#075b35}.linha-empty{padding:22px;text-align:center;color:#68756d;border:2px dashed #cbd8cf;border-radius:12px}.linha-row-actions{display:flex;flex-wrap:wrap;gap:9px;margin-top:12px}
+.linha-modal-body{padding:18px}.linha-grid{display:grid;grid-template-columns:1.7fr 1fr;gap:12px}.linha-model-list{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin-top:12px}.linha-model-card{border:1px solid #d5dfd8;border-radius:14px;padding:9px;background:#fff}.linha-model-card img{width:100%;aspect-ratio:1;object-fit:cover;border-radius:9px;background:#eef3ef}.linha-model-card h4{font-size:12px;margin:7px 0 5px}.linha-model-card p{font-size:10px;line-height:1.45;margin:0;color:#526057}.linha-pill{display:inline-block;background:#eaf3ed;color:#075b35;border-radius:20px;padding:4px 7px;font-size:9px;font-weight:800;margin-top:6px}.linha-upload{border:2px dashed #c9d6cd;border-radius:12px;padding:12px;text-align:center;background:#fbfdfb}.linha-preview{margin-top:16px;border:1px solid #d5dfd8;border-radius:16px;padding:12px;background:#fff}.linha-preview-title{background:#075b35;color:#fff;border-radius:30px;padding:12px;text-align:center;font-size:22px;font-weight:800}.linha-preview-hero{display:grid;grid-template-columns:2fr 1fr;gap:12px;margin-top:12px}.linha-preview-hero img{width:100%;height:330px;object-fit:cover;border-radius:13px;background:#eef3ef}.linha-benefits{border:1px solid #d5dfd8;border-radius:13px;padding:14px}.linha-benefits div{margin-bottom:12px;font-size:12px}.linha-benefits b{display:block;color:#075b35}.linha-empty{padding:22px;text-align:center;color:#68756d;border:2px dashed #cbd8cf;border-radius:12px}.linha-row-actions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px;margin-top:12px}.linha-row-actions button{width:100%;min-height:48px}
 /* V9 — painel de Linhas compacto: uma linha por vez, com carrossel por gesto/setas, sem fotos */
 .linha-admin-carousel{position:relative;margin-top:12px;overflow:hidden;border:1px solid #d5dfd8;border-radius:16px;background:#fff;touch-action:pan-y}
 .linha-admin-track{display:flex;transition:transform .28s cubic-bezier(.22,.61,.36,1);will-change:transform}
@@ -52,7 +52,7 @@ table{width:100%;border-collapse:collapse}th,td{padding:7px;border-bottom:1px so
 .linha-admin-dots{display:flex;justify-content:center;gap:6px;margin:10px 0 2px}
 .linha-admin-dot{width:7px;height:7px;border-radius:50%;background:#c9d4cc;border:0;padding:0}
 .linha-admin-dot.active{background:#075b35;transform:scale(1.15)}
-@media(max-width:600px){.linha-admin-slide{padding:12px 46px}.linha-admin-slide h4{font-size:18px}.linha-admin-slide-inner{padding:12px}.linha-row-actions{justify-content:center}.linha-admin-nav{width:36px;height:36px}}
+@media(max-width:600px){.linha-admin-slide{padding:12px 46px}.linha-admin-slide h4{font-size:18px}.linha-admin-slide-inner{padding:12px}.linha-row-actions{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.linha-admin-nav{width:36px;height:36px}}
 /* V3 — catálogo de linhas com carrossel infinito de linhas e modelos */
 .linhas-cat-wrap{margin-top:14px;position:relative}
 .linhas-cat-viewport{overflow:hidden;border-radius:18px;touch-action:pan-y}
@@ -183,6 +183,9 @@ table{width:100%;border-collapse:collapse}th,td{padding:7px;border-bottom:1px so
 .linha-prod-dot.active,.linha-cat-dot.active{background:#075b35;transform:scale(1.15)}
 @media(max-width:600px){.linha-cat-photo{height:285px}.linha-cat-card.compact{padding:8px}.linha-cat-head h4{font-size:16px}.linha-cat-nav{width:36px;height:36px}.linhas-cat-nav{width:36px;height:36px}}
 @media(min-width:900px){.linha-cat-photo{height:330px}}
+
+.linha-admin-slide .linha-row-actions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin-top:8px}.linha-admin-slide .linha-row-actions button{width:100%;min-height:48px}
+@media(max-width:500px){.linha-admin-slide .linha-row-actions{grid-template-columns:repeat(2,minmax(0,1fr));gap:7px}.linha-admin-slide .linha-row-actions button{min-height:46px}}
 </style>
 
 <style id="linha-catalog-v6-fix">
@@ -653,6 +656,72 @@ async function sincronizarFotosProdutoSupabase(produto, cloudProdutoId, onProgre
   }
   return {novas,existentes};
 }
+
+async function blobToDataUrl(blob){
+  return await new Promise((resolve,reject)=>{const fr=new FileReader();fr.onload=()=>resolve(fr.result);fr.onerror=reject;fr.readAsDataURL(blob);});
+}
+async function sincronizarFotosLinhaSupabase(linha){
+  if(!sbSession)throw new Error('Faça login na nuvem antes de sincronizar as linhas.');
+  const modelos=Array.isArray(linha?.modelos)?linha.modelos:[];
+  const refs=[];
+  for(const modelo of modelos){
+    const fotos=Array.isArray(modelo?.fotos)?modelo.fotos:[];
+    const fotoRefs=[];
+    for(let i=0;i<fotos.length;i++){
+      const blob=dataUrlToBlob(fotos[i]);
+      if(!blob)continue;
+      const hash=await sha256Hex(blob);
+      const ext=extFromMime(blob.type),path=`linhas/${linha.id}/${modelo.id}/${hash}.${ext}`;
+      const up=await sbClient.storage.from(CATALOG_SUPABASE_BUCKET).upload(path,blob,{contentType:blob.type||'image/jpeg',upsert:true,cacheControl:'31536000'});
+      if(up.error)throw new Error(`Foto da linha ${linha.titulo||''}: ${up.error.message||'falha no upload'}`);
+      const pub=sbClient.storage.from(CATALOG_SUPABASE_BUCKET).getPublicUrl(path).data.publicUrl;
+      fotoRefs.push({storage_path:path,public_url:pub,content_hash:hash,mime_type:blob.type||'image/jpeg',ordem:i});
+    }
+    refs.push({modelId:modelo.id,fotos:fotoRefs});
+  }
+  return refs;
+}
+async function prepararSnapshotNuvem(snapshot){
+  const out=JSON.parse(JSON.stringify(snapshot||{}));
+  const linhas=Array.isArray(out.linhas)?out.linhas:[];
+  const compactas=[];
+  for(const linha of linhas){
+    const original=await linhaGet(linha.id).catch(()=>linha);
+    const refs=await sincronizarFotosLinhaSupabase(original||linha);
+    const clone=JSON.parse(JSON.stringify(linha));
+    clone.modelos=(Array.isArray(clone.modelos)?clone.modelos:[]).map((m)=>{
+      const r=refs.find(x=>x.modelId===m.id);
+      const fotoRefs=Array.isArray(r?.fotos)?r.fotos:[];
+      delete m.fotos;
+      m.fotosRemotas=fotoRefs;
+      return m;
+    });
+    compactas.push(clone);
+  }
+  out.linhas=compactas;
+  out.cloudSchema='GIBIPRINTS_CLOUD_BACKUP_V2';
+  return out;
+}
+async function hidratarLinhasDoBackup(linhas){
+  const out=[];
+  for(const linha of (Array.isArray(linhas)?linhas:[])){
+    const clone=JSON.parse(JSON.stringify(linha));
+    clone.modelos=(Array.isArray(clone.modelos)?clone.modelos:[]).map(m=>({...m,fotos:Array.isArray(m.fotos)?m.fotos:[]}));
+    for(const m of clone.modelos){
+      if(!Array.isArray(m.fotosRemotas)||!m.fotosRemotas.length)continue;
+      for(const ref of m.fotosRemotas){
+        try{
+          const res=await fetch(ref.public_url,{cache:'force-cache'});
+          if(!res.ok)throw new Error('HTTP '+res.status);
+          m.fotos.push(await blobToDataUrl(await res.blob()));
+        }catch(e){console.warn('Falha ao baixar foto de linha:',ref?.public_url,e);}
+      }
+      delete m.fotosRemotas;
+    }
+    out.push(clone);
+  }
+  return out;
+}
 async function sincronizarCatalogoAtual(){
   if(!sbSession){alert('Faça login na nuvem antes de sincronizar o catálogo.');return false;}
   const btns=[...document.querySelectorAll('button')].filter(b=>/Enviar catálogo atual para a nuvem|Backup/i.test(b.textContent||''));
@@ -1013,7 +1082,10 @@ async function montarSnapshotBackup(){
 
 async function salvarSnapshotBackupNuvem(snapshot){
  if(!sbSession)throw new Error('Faça login na nuvem antes de fazer o backup.');
- await cloudUpsert('pedidos',{sync_id:CLOUD_BACKUP_SYNC_ID,tipo:'GIBIPRINTS_CLOUD_BACKUP',backup:snapshot});
+ const compacto=await prepararSnapshotNuvem(snapshot);
+ const row={sync_id:CLOUD_BACKUP_SYNC_ID,dados:{sync_id:CLOUD_BACKUP_SYNC_ID,tipo:'GIBIPRINTS_CLOUD_BACKUP',backup:compacto}};
+ const {error}=await sbClient.from('pedidos').upsert(row,{onConflict:'sync_id'});
+ if(error)throw new Error(`Supabase pedidos: ${error.message||error.code||'erro ao salvar backup'}`);
 }
 
 async function exportarBackup(){
@@ -1037,7 +1109,7 @@ async function restaurarUltimoBackupNuvem(){
   if(!snapshot||snapshot.tipo!=='GIBIPRINTS_CLOUD_BACKUP')throw new Error('Nenhum backup completo da nuvem foi encontrado.');
   const clientes=Array.isArray(snapshot.clientes)?snapshot.clientes:[];
   const pedidos=Array.isArray(snapshot.pedidos)?snapshot.pedidos:[];
-  const linhas=Array.isArray(snapshot.linhas)?snapshot.linhas:[];
+  const linhas=await hidratarLinhasDoBackup(snapshot.linhas);
   await localDbClear('clientes');
   await localDbClear('pedidos');
   for(const c of clientes)await localDbPut('clientes',c);
