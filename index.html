@@ -2149,7 +2149,8 @@ function irProdutoLinhaCatalogo(index,event){
 async function renderCatalogLinhas(){
   const panel=document.getElementById('catalogLinhasPanel');if(!panel)return;
   try{
-    const arr=(await linhaAll()).sort((a,b)=>String(b.atualizadoEm).localeCompare(String(a.atualizadoEm)));
+    const arrAll=(await linhaAll()).sort((a,b)=>String(b.atualizadoEm).localeCompare(String(a.atualizadoEm)));
+    const arr=arrAll.filter(l=>l.catalogo_ativo!==false);
     catalogLinhasData=arr;
     if(!arr.length){panel.innerHTML='<div style="display:flex;justify-content:space-between;gap:10px;align-items:center;flex-wrap:wrap"><div><h3 style="margin:0">📚 Linhas / Mostruários</h3><div class="muted" style="margin-top:4px">As linhas ficam disponíveis aqui para consulta e envio, mas <b>não entram no PDF/JPG do catálogo</b>.</div></div><small class="muted">0 linha(s)</small></div>'+renderCatalogLinhasMarkup(arr);return;}
     catalogLinhasState.lineLogical=Math.max(0,Math.min(Number(catalogLinhasState.lineLogical)||0,arr.length-1));
@@ -2875,9 +2876,11 @@ async function renderLinhasAdmin(){
     if(arr.length){
       body+='<div class="linha-model-list">'+arr.map(l=>{
         const lid=escAttr(l.id); const nome=esc(l.titulo); const qtd=l.modelos?.length||0;
-        return '<article class="linha-model-card"><div class="linha-pill">LINHA</div><h4>'+nome+'</h4><p>'+qtd+' modelo(s)</p><div class="linha-row-actions">'
+        const ativo=l.catalogo_ativo!==false;
+        return '<article class="linha-model-card"><div class="linha-pill">LINHA</div><h4>'+nome+'</h4><p>'+qtd+' modelo(s)</p><small class="muted">'+(ativo?'🟢 ATIVA NO CATÁLOGO':'🔴 OCULTA DO CATÁLOGO')+'</small><div class="linha-row-actions">'
           +'<button class="secondary" type="button" onclick="editarLinhaSalva(\''+lid+'\')">✏️ Editar</button>'
-          +'<button class="primary" type="button" onclick="enviarLinhaSalva(\''+lid+'\')">📤 Enviar</button>'
+          +'<button class="secondary" type="button" onclick="alternarCatalogoLinha(\''+lid+'\')">'+(ativo?'🙈 Ocultar do catálogo':'👁️ Mostrar no catálogo')+'</button>'
+          +'<button class="primary" type="button" onclick="enviarLinhaSalva(\''+lid+'\')">📤 Enviar Linha</button>'
           +'<button class="secondary" type="button" onclick="excluirLinhaSalva(\''+lid+'\')">🗑️ Excluir</button>'
           +'</div></article>';
       }).join('')+'</div>';
@@ -2887,7 +2890,15 @@ async function renderLinhasAdmin(){
 }
 async function editarLinhaSalva(id){const l=await linhaGet(id);if(!l)return;linhaAtual=JSON.parse(JSON.stringify(l));linhaFotosTemporarias=[];popularTiposLinha();document.getElementById('linhaTitulo').value=l.titulo||'';renderLinhaFotosTemp();renderLinhaPreview();document.getElementById('linhaModal').classList.add('open');document.getElementById('linhaModal').setAttribute('aria-hidden','false');}
 async function enviarLinhaSalva(id){const l=await linhaGet(id);if(!l)return;linhaAtual=JSON.parse(JSON.stringify(l));document.getElementById('linhaTitulo').value=l.titulo||'';renderLinhaPreview();await exportarLinhaMostruario();}
-async function excluirLinhaSalva(id){if(!confirm('Excluir esta linha e seus modelos?'))return;await linhaDelete(id);renderLinhasAdmin();}
+async function alternarCatalogoLinha(id){
+  const l=await linhaGet(id);if(!l)return;
+  l.catalogo_ativo=l.catalogo_ativo===false;
+  l.atualizadoEm=new Date().toISOString();
+  await linhaPut(l);
+  if(sbSession){try{await salvarSnapshotBackupNuvem(await montarSnapshotBackup());cloudMsg(l.catalogo_ativo?'Linha mostrada no catálogo e backup atualizado.':'Linha ocultada do catálogo e backup atualizado.');}catch(e){console.warn('Backup da visibilidade da linha:',e);}}
+  renderLinhasAdmin();renderCatalogLinhas();
+}
+async function excluirLinhaSalva(id){if(!confirm('Excluir esta linha e seus modelos?'))return;await linhaDelete(id);renderLinhasAdmin();renderCatalogLinhas();}
 function escAttr(v){return esc(v).replace(/`/g,'&#96;')}
 async function exportarLinhaMostruario(){
   if(!linhaAtual||!linhaAtual.modelos?.length){alert('Adicione pelo menos um modelo à linha.');return;}
