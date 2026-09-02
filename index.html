@@ -39,6 +39,36 @@ table{width:100%;border-collapse:collapse}th,td{padding:7px;border-bottom:1px so
 .linha-modal.open{display:flex}.linha-modal-card{width:min(1080px,100%);margin:12px auto;background:#fff;border-radius:20px;box-shadow:0 24px 70px rgba(0,0,0,.25);overflow:hidden}
 .linha-modal-head{background:#062519;border-top:8px solid #f7be14;color:#fff;padding:18px 20px;display:flex;justify-content:space-between;gap:12px;align-items:center}.linha-modal-head h2{color:#fff;margin:0}.linha-modal-head small{color:#f7be14;font-weight:700}
 .linha-modal-body{padding:18px}.linha-grid{display:grid;grid-template-columns:1.7fr 1fr;gap:12px}.linha-model-list{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin-top:12px}.linha-model-card{border:1px solid #d5dfd8;border-radius:14px;padding:9px;background:#fff}.linha-model-card img{width:100%;aspect-ratio:1;object-fit:cover;border-radius:9px;background:#eef3ef}.linha-model-card h4{font-size:12px;margin:7px 0 5px}.linha-model-card p{font-size:10px;line-height:1.45;margin:0;color:#526057}.linha-pill{display:inline-block;background:#eaf3ed;color:#075b35;border-radius:20px;padding:4px 7px;font-size:9px;font-weight:800;margin-top:6px}.linha-upload{border:2px dashed #c9d6cd;border-radius:12px;padding:12px;text-align:center;background:#fbfdfb}.linha-preview{margin-top:16px;border:1px solid #d5dfd8;border-radius:16px;padding:12px;background:#fff}.linha-preview-title{background:#075b35;color:#fff;border-radius:30px;padding:12px;text-align:center;font-size:22px;font-weight:800}.linha-preview-hero{display:grid;grid-template-columns:2fr 1fr;gap:12px;margin-top:12px}.linha-preview-hero img{width:100%;height:330px;object-fit:cover;border-radius:13px;background:#eef3ef}.linha-benefits{border:1px solid #d5dfd8;border-radius:13px;padding:14px}.linha-benefits div{margin-bottom:12px;font-size:12px}.linha-benefits b{display:block;color:#075b35}.linha-empty{padding:22px;text-align:center;color:#68756d;border:2px dashed #cbd8cf;border-radius:12px}.linha-row-actions{display:flex;flex-wrap:wrap;gap:9px;margin-top:12px}
+/* V3 — catálogo de linhas com carrossel infinito de linhas e modelos */
+.linhas-cat-wrap{margin-top:14px;position:relative}
+.linhas-cat-viewport{overflow:hidden;border-radius:18px}
+.linhas-cat-track{display:flex;transition:transform .32s cubic-bezier(.22,.61,.36,1);will-change:transform}
+.linha-cat-slide{flex:0 0 100%;width:100%;padding:2px}
+.linha-cat-card{border:1px solid #d5dfd8;border-radius:18px;background:#fff;padding:14px}
+.linha-cat-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:10px}
+.linha-cat-head h4{margin:0;color:#075b35;font-size:18px}
+.linha-cat-counter{font-size:11px;color:#68756d;font-weight:700}
+.linha-cat-product{position:relative;overflow:hidden;border:1px solid #e0e7e1;border-radius:16px;background:#f8faf8}
+.linha-cat-product-track{display:flex;transition:transform .28s cubic-bezier(.22,.61,.36,1);will-change:transform}
+.linha-cat-product-slide{flex:0 0 100%;width:100%;padding:12px;display:grid;grid-template-columns:minmax(0,1.25fr) minmax(220px,.75fr);gap:14px;align-items:stretch}
+.linha-cat-photo{height:360px;border-radius:13px;background:#eef3ef;overflow:hidden;display:flex;align-items:flex-start;justify-content:center}
+.linha-cat-photo img{width:100%;height:100%;object-fit:cover;object-position:center top;display:block}
+.linha-cat-info{background:#fff;border:1px solid #dce5de;border-radius:13px;padding:16px;display:flex;flex-direction:column;justify-content:center}
+.linha-cat-info .tag{display:inline-block;align-self:flex-start;background:#eaf3ed;color:#075b35;border-radius:20px;padding:5px 8px;font-size:10px;font-weight:900;text-transform:uppercase}
+.linha-cat-info h5{margin:10px 0 7px;font-size:20px;color:#172019}
+.linha-cat-info p{margin:0;font-size:12px;line-height:1.65;color:#536158}
+.linha-cat-nav,.linhas-cat-nav{position:absolute;border:0;border-radius:50%;background:rgba(255,255,255,.95);color:#075b35;box-shadow:0 2px 10px rgba(0,0,0,.18);font-weight:900;z-index:4;display:flex;align-items:center;justify-content:center;cursor:pointer}
+.linhas-cat-nav{top:50%;transform:translateY(-50%);width:42px;height:42px;font-size:28px}
+.linhas-cat-nav.left{left:8px}.linhas-cat-nav.right{right:8px}
+.linha-cat-nav{top:180px;width:38px;height:38px;font-size:25px}
+.linha-cat-nav.left{left:18px}.linha-cat-nav.right{right:18px}
+.linha-cat-dots,.linha-prod-dots{display:flex;justify-content:center;gap:6px;margin-top:10px}
+.linha-cat-dot,.linha-prod-dot{width:7px;height:7px;border-radius:50%;background:#c9d4cc;cursor:pointer}
+.linha-cat-dot.active,.linha-prod-dot.active{background:#075b35;transform:scale(1.15)}
+.linha-cat-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+@media(max-width:760px){.linha-cat-product-slide{grid-template-columns:1fr}.linha-cat-photo{height:430px}.linha-cat-nav{top:215px}.linhas-cat-nav{width:38px;height:38px}.linha-cat-head{padding-right:35px}}
+@media(max-width:500px){.linha-cat-photo{height:390px}.linha-cat-info h5{font-size:17px}.linha-cat-info{padding:13px}.linha-cat-product-slide{padding:8px}.linha-cat-nav{top:195px}}
+
 @media(max-width:850px){.linha-grid,.linha-preview-hero{grid-template-columns:1fr}.linha-model-list{grid-template-columns:repeat(2,1fr)}}
 @media(max-width:500px){.linha-model-list{grid-template-columns:1fr}.linha-modal{padding:6px}.linha-modal-body{padding:12px}}
 .linha-pill{line-height:1.25;text-transform:uppercase}
@@ -1937,17 +1967,54 @@ async function sincronizarCatalogoComProdutos(){
   return base;
 }
 
+let catalogLinhasState={linePhysical:1,lineLogical:0,productLogical:{}};
+function linhaPhotoSrc(modelo){return String(modelo?.fotos?.[0]||'').trim();}
+function linhaEscJs(v){return String(v??'').replace(/\\/g,'\\\\').replace(/'/g,"\\'").replace(/\n/g,' ');}
+function renderCatalogLinhasMarkup(arr){
+  const realCount=arr.length;
+  if(!realCount)return '<div class="linha-empty" style="margin-top:12px">Nenhuma linha cadastrada. Crie uma em <b>Produtos → Nova linha</b>.</div>';
+  const clones=[arr[realCount-1],...arr,arr[0]];
+  const slides=clones.map((l,physical)=>{
+    const realIndex=(physical-1+realCount)%realCount;
+    const titulo=esc(l.titulo||'Nova Linha');
+    const modelos=Array.isArray(l.modelos)?l.modelos:[];
+    const pCount=modelos.length;
+    const logical=Number(catalogLinhasState.productLogical[String(realIndex)]||0);
+    const pClones=pCount?[modelos[pCount-1],...modelos,modelos[0]]:[];
+    const productSlides=pClones.map((m,pp)=>{
+      const foto=escAttr(linhaPhotoSrc(m));
+      const specs=(m.especificacoes||[]).slice(0,6).map(esc).join('<br>• ');
+      return `<div class="linha-cat-product-slide"><div class="linha-cat-photo">${foto?`<img src="${foto}" alt="${esc(m.tipo||'Modelo')}" loading="lazy" referrerpolicy="no-referrer">`:'<div class="linha-empty" style="margin:auto;border:0">📷 Sem foto</div>'}</div><div class="linha-cat-info"><span class="tag">Modelo da linha</span><h5>${esc(m.tipo||'Modelo')}</h5><p><b>Especificações</b><br>• ${specs||'Personalização profissional'}</p></div></div>`;
+    }).join('');
+    const pDots=pCount?modelos.map((_,i)=>`<button class="linha-prod-dot ${i===logical?'active':''}" type="button" aria-label="Modelo ${i+1}" onclick="irProdutoLinhaCatalogo(${realIndex},${i})"></button>`).join(''):'';
+    return `<section class="linha-cat-slide" data-line-real="${realIndex}"><div class="linha-cat-card"><div class="linha-cat-head"><div><span class="linha-pill">LINHA</span><h4>${titulo}</h4></div><span class="linha-cat-counter">${pCount} modelo(s)</span></div><div class="linha-cat-product" data-product-carousel="${realIndex}" ontouchstart="linhaProdutoTouchStart(event,${realIndex})" ontouchend="linhaProdutoTouchEnd(event,${realIndex})"><div class="linha-cat-product-track" id="linhaProdTrack_${realIndex}">${productSlides}</div>${pCount>1?`<button class="linha-cat-nav left" type="button" aria-label="Modelo anterior" onclick="moverProdutoLinhaCatalogo(${realIndex},-1,event)">‹</button><button class="linha-cat-nav right" type="button" aria-label="Próximo modelo" onclick="moverProdutoLinhaCatalogo(${realIndex},1,event)">›</button>`:''}</div><div class="linha-prod-dots" id="linhaProdDots_${realIndex}">${pDots}</div><div class="linha-cat-actions"><button class="secondary" type="button" onclick="editarLinhaSalva('${escAttr(l.id)}')">✏️ Editar</button><button class="primary" type="button" onclick="enviarLinhaSalva('${escAttr(l.id)}')">📤 Enviar Linha</button></div></div></section>`;
+  }).join('');
+  return `<div class="linhas-cat-wrap"><button class="linhas-cat-nav left" type="button" aria-label="Linha anterior" onclick="moverLinhaCatalogo(-1,event)">‹</button><button class="linhas-cat-nav right" type="button" aria-label="Próxima linha" onclick="moverLinhaCatalogo(1,event)">›</button><div class="linhas-cat-viewport" id="linhasCatViewport" ontouchstart="linhaCatTouchStart(event)" ontouchend="linhaCatTouchEnd(event)"><div class="linhas-cat-track" id="linhasCatTrack">${slides}</div></div><div class="linha-cat-dots" id="linhasCatDots">${arr.map((_,i)=>`<button class="linha-cat-dot ${i===catalogLinhasState.lineLogical?'active':''}" type="button" aria-label="Linha ${i+1}" onclick="irLinhaCatalogo(${i})"></button>`).join('')}</div></div>`;
+}
+function aplicarPosicaoLinhaCatalogo(animate=true){
+  const track=document.getElementById('linhasCatTrack');if(!track)return;const physical=catalogLinhasState.linePhysical;track.style.transition=animate?'transform .32s cubic-bezier(.22,.61,.36,1)':'none';track.style.transform=`translate3d(${-physical*100}%,0,0)`;document.querySelectorAll('#linhasCatDots .linha-cat-dot').forEach((d,i)=>d.classList.toggle('active',i===catalogLinhasState.lineLogical));
+  const slide=track.children[physical];if(slide){const real=Number(slide.dataset.lineReal);aplicarPosicaoProdutoLinhaCatalogo(real,false);}
+}
+function aplicarPosicaoProdutoLinhaCatalogo(realIndex,animate=true){
+  const track=document.getElementById('linhaProdTrack_'+realIndex);if(!track)return;const slideCount=track.children.length;if(slideCount<2)return;const logical=((Number(catalogLinhasState.productLogical[String(realIndex)]||0)% (slideCount-2))+(slideCount-2))%(slideCount-2);const physical=logical+1;track.style.transition=animate?'transform .28s cubic-bezier(.22,.61,.36,1)':'none';track.style.transform=`translate3d(${-physical*100}%,0,0)`;document.querySelectorAll('#linhaProdDots_'+realIndex+' .linha-prod-dot').forEach((d,i)=>d.classList.toggle('active',i===logical));}
+function moverLinhaCatalogo(dir,event){event?.stopPropagation();const track=document.getElementById('linhasCatTrack');if(!track)return;const total=track.children.length-2;if(total<1)return;catalogLinhasState.linePhysical+=dir;catalogLinhasState.lineLogical=(catalogLinhasState.lineLogical+dir+total)%total;aplicarPosicaoLinhaCatalogo(true);setTimeout(()=>{if(catalogLinhasState.linePhysical===0){catalogLinhasState.linePhysical=total+1;aplicarPosicaoLinhaCatalogo(false)}else if(catalogLinhasState.linePhysical===total+1){catalogLinhasState.linePhysical=1;aplicarPosicaoLinhaCatalogo(false)}},340);}
+function irLinhaCatalogo(index){const track=document.getElementById('linhasCatTrack');if(!track)return;const total=track.children.length-2;index=((index%total)+total)%total;catalogLinhasState.lineLogical=index;catalogLinhasState.linePhysical=index+1;aplicarPosicaoLinhaCatalogo(true);}
+let linhaCatTouchX=0,linhaProdTouch={};
+function linhaCatTouchStart(e){linhaCatTouchX=e.changedTouches?.[0]?.clientX||0}
+function linhaCatTouchEnd(e){const x=e.changedTouches?.[0]?.clientX||0,d=x-linhaCatTouchX;if(Math.abs(d)>45)moverLinhaCatalogo(d<0?1:-1,e)}
+function linhaProdutoTouchStart(e,real){e.stopPropagation();linhaProdTouch[real]=e.changedTouches?.[0]?.clientX||0}
+function linhaProdutoTouchEnd(e,real){e.stopPropagation();const x=e.changedTouches?.[0]?.clientX||0,d=x-(linhaProdTouch[real]||x);if(Math.abs(d)>45)moverProdutoLinhaCatalogo(real,d<0?1:-1,e)}
+function moverProdutoLinhaCatalogo(real,dir,event){event?.stopPropagation();const track=document.getElementById('linhaProdTrack_'+real);if(!track)return;const total=track.children.length-2;if(total<1)return;let physical=Number(catalogLinhasState.productLogical[String(real)]||0)+1+dir;let logical;if(physical===0){logical=total-1}else if(physical===total+1){logical=0}else{logical=physical-1}catalogLinhasState.productLogical[String(real)]=logical;track.style.transition='transform .28s cubic-bezier(.22,.61,.36,1)';track.style.transform=`translate3d(${-physical*100}%,0,0)`;document.querySelectorAll('#linhaProdDots_'+real+' .linha-prod-dot').forEach((d,i)=>d.classList.toggle('active',i===logical));setTimeout(()=>{if(physical===0){track.style.transition='none';track.style.transform=`translate3d(${-total*100}%,0,0)`}else if(physical===total+1){track.style.transition='none';track.style.transform='translate3d(-100%,0,0)'}},300);}
+function irProdutoLinhaCatalogo(real,index){const track=document.getElementById('linhaProdTrack_'+real);if(!track)return;const total=track.children.length-2;index=((index%total)+total)%total;catalogLinhasState.productLogical[String(real)]=index;track.style.transition='transform .28s cubic-bezier(.22,.61,.36,1)';track.style.transform=`translate3d(${-(index+1)*100}%,0,0)`;document.querySelectorAll('#linhaProdDots_'+real+' .linha-prod-dot').forEach((d,i)=>d.classList.toggle('active',i===index));}
 async function renderCatalogLinhas(){
   const panel=document.getElementById('catalogLinhasPanel');if(!panel)return;
   try{
     const arr=(await linhaAll()).sort((a,b)=>String(b.atualizadoEm).localeCompare(String(a.atualizadoEm)));
     let body='<div style="display:flex;justify-content:space-between;gap:10px;align-items:center;flex-wrap:wrap"><div><h3 style="margin:0">📚 Linhas / Mostruários</h3><div class="muted" style="margin-top:4px">As linhas ficam disponíveis aqui para consulta e envio, mas <b>não entram no PDF/JPG do catálogo</b>.</div></div><small class="muted">'+arr.length+' linha(s)</small></div>';
-    if(!arr.length){body+='<div class="linha-empty" style="margin-top:12px">Nenhuma linha cadastrada. Crie uma em <b>Produtos → Nova linha</b>.</div>';panel.innerHTML=body;return;}
-    body+='<div class="linha-model-list" style="margin-top:12px">'+arr.map(l=>{
-      const id=escAttr(l.id),titulo=esc(l.titulo||'Nova Linha'),qtd=Array.isArray(l.modelos)?l.modelos.length:0,thumb=escAttr(l.modelos?.[0]?.fotos?.[0]||'');
-      return '<article class="linha-model-card" style="min-width:220px">'+(thumb?'<img src="'+thumb+'" alt="" style="width:100%;height:150px;object-fit:cover;border-radius:12px;margin-bottom:8px">':'')+'<div class="linha-pill">LINHA</div><h4 style="margin:7px 0 3px">'+titulo+'</h4><p>'+qtd+' modelo(s) • <b>Não exportada com o catálogo</b></p><div class="linha-row-actions"><button class="secondary" type="button" onclick="editarLinhaSalva(\''+id+'\')">✏️ Editar</button><button class="primary" type="button" onclick="enviarLinhaSalva(\''+id+'\')">📤 Enviar Linha</button></div></article>';
-    }).join('')+'</div>';
-    panel.innerHTML=body;
+    if(!arr.length){panel.innerHTML=body+renderCatalogLinhasMarkup(arr);return;}
+    catalogLinhasState.lineLogical=Math.max(0,Math.min(catalogLinhasState.lineLogical,arr.length-1));catalogLinhasState.linePhysical=catalogLinhasState.lineLogical+1;
+    body+=renderCatalogLinhasMarkup(arr);panel.innerHTML=body;
+    requestAnimationFrame(()=>{aplicarPosicaoLinhaCatalogo(false);arr.forEach((_,i)=>aplicarPosicaoProdutoLinhaCatalogo(i,false));});
   }catch(e){panel.innerHTML='<div class="muted">Não foi possível carregar as linhas.</div>';}
 }
 
@@ -2653,7 +2720,7 @@ function adicionarModeloLinha(){
 function renderLinhaPreview(){
   const titulo=(document.getElementById('linhaTitulo')?.value||linhaAtual?.titulo||'NOVA LINHA').trim()||'NOVA LINHA';const t=document.getElementById('linhaPreviewTitulo');if(t)t.textContent=titulo;
   const hero=document.getElementById('linhaHeroImg'),modelos=document.getElementById('linhaModelosPreview');const ms=linhaAtual?.modelos||[];if(hero)hero.src=ms[0]?.fotos?.[0]||'';
-  if(modelos)modelos.innerHTML=ms.length?ms.map((m,i)=>`<article class="linha-model-card"><img src="${escAttr(m.fotos[0]||'')}" alt="${escAttr(m.tipo)}"><h4>${i+1}. ${esc(m.tipo)}</h4><p><b>Especificações</b><br>• ${(m.especificacoes||[]).map(esc).join('<br>• ')}</p><span class="linha-pill">QUANTO MAIOR A QUANTIDADE, MELHOR O VALOR POR PEÇA</span><button class="secondary" type="button" style="width:100%;margin-top:7px;padding:7px" onclick="removerModeloLinha('${m.id}')">Remover</button></article>`).join(''):'<div class="linha-empty" style="grid-column:1/-1">Os modelos adicionados aparecerão aqui.</div>';
+  if(modelos)modelos.innerHTML=ms.length?ms.map((m,i)=>`<article class="linha-model-card"><img src="${escAttr(m.fotos[0]||'')}" alt="${escAttr(m.tipo)}"><h4>${i+1}. ${esc(m.tipo)}</h4><p><b>Especificações</b><br>• ${(m.especificacoes||[]).map(esc).join('<br>• ')}</p><button class="secondary" type="button" style="width:100%;margin-top:7px;padding:7px" onclick="removerModeloLinha('${m.id}')">Remover</button></article>`).join(''):'<div class="linha-empty" style="grid-column:1/-1">Os modelos adicionados aparecerão aqui.</div>';
 }
 function removerModeloLinha(id){if(!linhaAtual)return;linhaAtual.modelos=linhaAtual.modelos.filter(m=>m.id!==id);renderLinhaPreview();}
 async function salvarLinhaAtual(){
@@ -2690,9 +2757,9 @@ async function exportarLinhaMostruario(){
   ctx.fillStyle='#f7f7f2';ctx.fillRect(0,0,W,H);ctx.fillStyle='#062519';ctx.fillRect(0,0,W,195);ctx.fillStyle='#f7be14';ctx.fillRect(0,0,W,8);
   ctx.fillStyle='#fff';ctx.font='700 42px Arial';ctx.fillText('GIBIPRINTS',72,70);ctx.fillStyle='#f7be14';ctx.font='700 20px Arial';ctx.fillText('PARA EMPRESAS, GRUPOS E EVENTOS',72,104);ctx.fillStyle='#fff';ctx.font='18px Arial';ctx.fillText('Cada estampa conta uma história',72,137);
   ctx.fillStyle='#075b35';round(55,220,1130,68,34);ctx.fillStyle='#fff';ctx.font='700 30px Arial';ctx.textAlign='center';ctx.fillText('LINHA: '+titulo.toUpperCase(),620,265);ctx.textAlign='left';
-  const heroSrc=modelos[0]?.fotos?.[0]||'';const hero=await load(heroSrc);ctx.fillStyle='#fff';round(55,315,730,580,22);if(hero){const sc=Math.min(700/hero.width,550/hero.height),dw=hero.width*sc,dh=hero.height*sc;ctx.drawImage(hero,70+(700-dw)/2,330+(550-dh)/2,dw,dh);}else{ctx.fillStyle='#68756d';ctx.font='22px Arial';ctx.textAlign='center';ctx.fillText('Imagem não cadastrada',420,600);ctx.textAlign='left'}
-  ctx.fillStyle='#fff';round(805,315,380,580,22);const bs=[['PERSONALIZADO','Sua marca com qualidade profissional'],['CONFORTO','Tecidos adequados para cada modelo'],['ESTAMPAS','Personalização com identidade visual'],['RESISTÊNCIA','Acabamento para uso profissional'],['IDEAL PARA','Empresas, equipes e eventos']];let by=370;bs.forEach(b=>{ctx.fillStyle='#075b35';ctx.font='700 19px Arial';ctx.fillText(b[0],835,by);ctx.fillStyle='#28352d';ctx.font='16px Arial';ctx.fillText(b[1],835,by+25);by+=105;});
-  const show=modelos.slice(0,5),gap=12,cw=(1130-gap*4)/5,y=930;for(let i=0;i<show.length;i++){const m=show[i],x=55+i*(cw+gap);ctx.fillStyle='#fff';round(x,y,cw,650,17);const im=await load(m.fotos?.[0]);if(im){const sc=Math.min((cw-18)/im.width,260/im.height),dw=im.width*sc,dh=im.height*sc;ctx.drawImage(im,x+9+(cw-18-dw)/2,y+9+(260-dh)/2,dw,dh);}ctx.fillStyle='#075b35';ctx.font='700 14px Arial';ctx.fillText((i+1)+'. '+m.tipo,x+10,y+292);ctx.fillStyle='#27332c';ctx.font='11px Arial';ctx.fillText('Especificações',x+10,y+320);(m.especificacoes||[]).slice(0,5).forEach((t,j)=>ctx.fillText('• '+t,x+10,y+343+j*22));ctx.fillStyle='#075b35';ctx.font='700 8px Arial';ctx.fillText('QUANTO MAIOR A QUANTIDADE, MELHOR O VALOR POR PEÇA',x+10,y+470);ctx.fillText('DO PEDIDO',x+10,y+487);}
+  const heroSrc=modelos[0]?.fotos?.[0]||'';const hero=await load(heroSrc);ctx.fillStyle='#fff';round(55,300,760,635,22);if(hero){const iw=740,ih=615,sc=Math.min(iw/hero.width,ih/hero.height),dw=hero.width*sc,dh=hero.height*sc;ctx.drawImage(hero,65+(iw-dw)/2,310+(ih-dh)/2,dw,dh);}else{ctx.fillStyle='#68756d';ctx.font='22px Arial';ctx.textAlign='center';ctx.fillText('Imagem não cadastrada',435,615);ctx.textAlign='left'}
+  ctx.fillStyle='#fff';round(835,300,350,635,22);const bs=[['PERSONALIZADO','Sua marca com qualidade profissional'],['CONFORTO','Tecidos adequados para cada modelo'],['ESTAMPAS','Personalização com identidade visual'],['RESISTÊNCIA','Acabamento para uso profissional'],['IDEAL PARA','Empresas, equipes e eventos']];let by=355;bs.forEach(b=>{ctx.fillStyle='#075b35';ctx.font='700 18px Arial';ctx.fillText(b[0],862,by);ctx.fillStyle='#28352d';ctx.font='15px Arial';ctx.fillText(b[1],862,by+24);by+=112;});
+  const show=modelos.slice(0,5),gap=12,cw=(1130-gap*4)/5,y=965;for(let i=0;i<show.length;i++){const m=show[i],x=55+i*(cw+gap);ctx.fillStyle='#fff';round(x,y,cw,625,17);const im=await load(m.fotos?.[0]);if(im){const iw=cw-18,ih=250,sc=Math.min(iw/im.width,ih/im.height),dw=im.width*sc,dh=im.height*sc;ctx.drawImage(im,x+9+(iw-dw)/2,y+9+(ih-dh)/2,dw,dh);}ctx.fillStyle='#075b35';ctx.font='700 14px Arial';ctx.fillText((i+1)+'. '+m.tipo,x+10,y+292);ctx.fillStyle='#27332c';ctx.font='11px Arial';ctx.fillText('Especificações',x+10,y+320);(m.especificacoes||[]).slice(0,5).forEach((t,j)=>ctx.fillText('• '+t,x+10,y+343+j*22));}
   ctx.fillStyle='#062519';ctx.fillRect(0,1690,W,64);ctx.fillStyle='#fff';ctx.font='700 17px Arial';ctx.textAlign='center';ctx.fillText('WhatsApp (21) 98251-1405   |   Instagram @GIBIPRINTS   |   Benfica — Rio de Janeiro',620,1730);ctx.textAlign='left';
   const blob=await new Promise((res,rej)=>canvas.toBlob(b=>b?res(b):rej(new Error('Não foi possível criar o JPG.')),'image/jpeg',.95));const safe=titulo.replace(/[^a-z0-9]+/gi,'_').replace(/^_|_$/g,'')||'Linha';const file=new File([blob],`GIBIPRINTS_Linha_${safe}.jpg`,{type:'image/jpeg'});
   try{if(navigator.share&&navigator.canShare&&navigator.canShare({files:[file]})){await navigator.share({title:`GIBIPRINTS — Linha ${titulo}`,text:`Mostruário: ${titulo} — sem valores`,files:[file]});return;}}catch(e){}const url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=file.name;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),3000);
