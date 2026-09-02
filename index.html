@@ -159,6 +159,34 @@ table{width:100%;border-collapse:collapse}th,td{padding:7px;border-bottom:1px so
 @media(max-width:600px){.linha-cat-photo{height:285px}.linha-cat-card.compact{padding:8px}.linha-cat-head h4{font-size:16px}.linha-cat-nav{width:36px;height:36px}.linhas-cat-nav{width:36px;height:36px}}
 @media(min-width:900px){.linha-cat-photo{height:330px}}
 </style>
+
+<style id="linha-catalog-v6-fix">
+/* V6 — navegação independente: produto pela foto, linha pelo cabeçalho */
+.linhas-cat-wrap{position:relative;margin-top:12px}
+.linha-cat-card.compact{padding:10px}
+.linha-cat-head{position:relative;display:flex;align-items:center;justify-content:center;min-height:58px;padding:4px 52px;margin-bottom:7px;touch-action:pan-y;user-select:none;-webkit-user-select:none;cursor:grab}
+.linha-cat-head:active{cursor:grabbing}
+.linha-cat-head>div{text-align:center}
+.linha-cat-head .linha-pill{display:inline-block;margin-bottom:2px}
+.linha-cat-head h4{margin:0;color:#075b35;font-size:18px;line-height:1.15;text-align:center}
+.linha-cat-counter{position:absolute;right:58px;top:50%;transform:translateY(-50%)}
+.linha-cat-line-nav{position:absolute;top:50%;transform:translateY(-50%);width:34px;height:34px;border:0;border-radius:50%;background:#fff;color:#075b35;box-shadow:0 2px 8px rgba(0,0,0,.16);font-size:24px;font-weight:900;display:flex;align-items:center;justify-content:center;z-index:6;padding:0}
+.linha-cat-line-nav.left{left:7px}.linha-cat-line-nav.right{right:7px}
+.linhas-cat-nav{display:none!important}
+.linha-cat-product{touch-action:pan-y!important;overscroll-behavior-x:contain;cursor:grab}
+.linha-cat-product:active{cursor:grabbing}
+.linha-cat-photo{height:310px}
+.linha-cat-photo img{object-position:center top}
+.linha-cat-nav{pointer-events:auto}
+.linha-prod-dots{margin-top:6px}
+@media(max-width:600px){
+ .linha-cat-head{padding:4px 44px;min-height:54px}
+ .linha-cat-head h4{font-size:16px}
+ .linha-cat-counter{display:none}
+ .linha-cat-line-nav{width:32px;height:32px;font-size:22px}
+ .linha-cat-photo{height:285px}
+}
+</style>
 </head>
 <body>
 
@@ -1996,18 +2024,11 @@ function linhaPhotoSrc(modelo){
 }
 function ordemModeloLinha(tipo){
   const t=String(tipo||'').trim().toLowerCase();
-  const ordem={
-    'gola polo masculino':0,
-    'gola polo feminino':1,
-    'regata':2,
-    'camisa comum':3,
-    'baby look':4
-  };
+  const ordem={'gola polo masculino':0,'gola polo feminino':1,'regata':2,'camisa comum':3,'baby look':4};
   return Object.prototype.hasOwnProperty.call(ordem,t)?ordem[t]:99;
 }
 function modelosOrdenadosLinha(modelos){
-  return (Array.isArray(modelos)?modelos:[])
-    .map((m,i)=>({...m,__ordemLinha:ordemModeloLinha(m?.tipo),__origemLinha:i}))
+  return (Array.isArray(modelos)?modelos:[]).map((m,i)=>({...m,__ordemLinha:ordemModeloLinha(m?.tipo),__origemLinha:i}))
     .sort((a,b)=>a.__ordemLinha-b.__ordemLinha||a.__origemLinha-b.__origemLinha);
 }
 function catalogLinhaAtual(){
@@ -2019,78 +2040,111 @@ function catalogLinhaAtual(){
 function atualizarDotsLinhaCatalogo(){
   document.querySelectorAll('#linhasCatDots .linha-cat-dot').forEach((d,i)=>d.classList.toggle('active',i===catalogLinhasState.lineLogical));
 }
+function resetarModeloDaLinha(logicalLine){
+  const key=String(logicalLine);
+  if(!Object.prototype.hasOwnProperty.call(catalogLinhasState.productLogical,key)) catalogLinhasState.productLogical[key]=0;
+}
 function renderLinhaCatalogoAtual(animate=true){
-  const viewport=document.getElementById('linhasCatViewport');
-  if(!viewport)return;
-  const l=catalogLinhaAtual();
-  if(!l){viewport.innerHTML='<div class="linha-empty">Nenhuma linha cadastrada.</div>';return;}
+  const viewport=document.getElementById('linhasCatViewport'); if(!viewport)return;
+  const l=catalogLinhaAtual(); if(!l){viewport.innerHTML='<div class="linha-empty">Nenhuma linha cadastrada.</div>';return;}
   const realIndex=catalogLinhasState.lineLogical;
-  const modelos=modelosOrdenadosLinha(l.modelos);
-  const pCount=modelos.length;
+  resetarModeloDaLinha(realIndex);
+  const modelos=modelosOrdenadosLinha(l.modelos),pCount=modelos.length;
   let logical=Number(catalogLinhasState.productLogical[String(realIndex)]||0);
-  if(pCount)logical=((logical%pCount)+pCount)%pCount; else logical=0;
+  if(pCount)logical=((logical%pCount)+pCount)%pCount;else logical=0;
   catalogLinhasState.productLogical[String(realIndex)]=logical;
   const m=pCount?modelos[logical]:null;
   const foto=escAttr(linhaPhotoSrc(m));
   const titulo=esc(l.titulo||'Nova Linha');
-  const dots=pCount>1?modelos.map((_,i)=>`<button class="linha-prod-dot ${i===logical?'active':''}" type="button" aria-label="Modelo ${i+1}" onclick="irProdutoLinhaCatalogo(${i},event)"></button>`).join(''):'';
-  viewport.innerHTML=`<section class="linha-cat-slide"><div class="linha-cat-card compact"><div class="linha-cat-head"><div><span class="linha-pill">LINHA</span><h4>${titulo}</h4></div><span class="linha-cat-counter">${pCount} modelo(s)</span></div><div class="linha-cat-product" id="linhaCatProduct" data-product-index="${logical}" onpointerdown="linhaProdutoPointerStart(event)" onpointerup="linhaProdutoPointerEnd(event)" onpointercancel="linhaProdutoPointerCancel(event)"><div class="linha-cat-photo">${foto?`<img src="${foto}" alt="${escAttr(m?.tipo||'Modelo')}" loading="eager" referrerpolicy="no-referrer">`:'<div class="linha-empty" style="margin:auto;border:0">📷 Sem foto</div>'}<button class="linha-cat-nav left" type="button" aria-label="Modelo anterior" onclick="moverProdutoLinhaCatalogo(-1,event)">‹</button><button class="linha-cat-nav right" type="button" aria-label="Próximo modelo" onclick="moverProdutoLinhaCatalogo(1,event)">›</button></div></div><div class="linha-prod-dots" id="linhaProdDots">${dots}</div></div></section>`;
+  const dots=pCount>1?modelos.map((x,i)=>`<button class="linha-prod-dot ${i===logical?'active':''}" type="button" aria-label="Modelo ${escAttr(x?.tipo||(''+(i+1)))}" onclick="irProdutoLinhaCatalogo(${i},event)"></button>`).join(''):'';
+  viewport.innerHTML=`<section class="linha-cat-slide"><div class="linha-cat-card compact">
+    <div class="linha-cat-head" id="linhaCatHead" onpointerdown="linhaHeaderPointerStart(event)" onpointerup="linhaHeaderPointerEnd(event)" onpointercancel="linhaHeaderPointerCancel(event)">
+      <button class="linha-cat-line-nav left" type="button" aria-label="Linha anterior" onclick="moverLinhaCatalogo(-1,event)">‹</button>
+      <div><span class="linha-pill">LINHA</span><h4>${titulo}</h4></div>
+      <span class="linha-cat-counter">${pCount} modelo(s)</span>
+      <button class="linha-cat-line-nav right" type="button" aria-label="Próxima linha" onclick="moverLinhaCatalogo(1,event)">›</button>
+    </div>
+    <div class="linha-cat-product" id="linhaCatProduct" data-product-index="${logical}" onpointerdown="linhaProdutoPointerStart(event)" onpointermove="linhaProdutoPointerMove(event)" onpointerup="linhaProdutoPointerEnd(event)" onpointercancel="linhaProdutoPointerCancel(event)" onpointerleave="linhaProdutoPointerLeave(event)">
+      <div class="linha-cat-photo">${foto?`<img src="${foto}" alt="${escAttr(m?.tipo||'Modelo')}" loading="eager" referrerpolicy="no-referrer">`:'<div class="linha-empty" style="margin:auto;border:0">📷 Sem foto</div>'}
+        <button class="linha-cat-nav left" type="button" aria-label="Modelo anterior" onclick="moverProdutoLinhaCatalogo(-1,event)">‹</button>
+        <button class="linha-cat-nav right" type="button" aria-label="Próximo modelo" onclick="moverProdutoLinhaCatalogo(1,event)">›</button>
+      </div>
+    </div>
+    <div class="linha-prod-dots" id="linhaProdDots">${dots}</div>
+  </div></section>`;
   atualizarDotsLinhaCatalogo();
-  if(animate){viewport.animate([{opacity:.65,transform:'translateX(10px)'},{opacity:1,transform:'translateX(0)'}],{duration:180,easing:'ease-out'});}
+  if(animate)viewport.animate([{opacity:.7},{opacity:1}],{duration:150,easing:'ease-out'});
 }
 function renderCatalogLinhasMarkup(arr){
   if(!arr.length)return '<div class="linha-empty" style="margin-top:12px">Nenhuma linha cadastrada. Crie uma em <b>Produtos → Nova linha</b>.</div>';
-  return `<div class="linhas-cat-wrap"><button class="linhas-cat-nav left" type="button" aria-label="Linha anterior" onclick="moverLinhaCatalogo(-1,event)">‹</button><button class="linhas-cat-nav right" type="button" aria-label="Próxima linha" onclick="moverLinhaCatalogo(1,event)">›</button><div class="linhas-cat-viewport" id="linhasCatViewport"></div><div class="linha-cat-dots" id="linhasCatDots">${arr.map((_,i)=>`<button class="linha-cat-dot ${i===catalogLinhasState.lineLogical?'active':''}" type="button" aria-label="Linha ${i+1}" onclick="irLinhaCatalogo(${i},event)"></button>`).join('')}</div></div>`;
+  return `<div class="linhas-cat-wrap"><div class="linhas-cat-viewport" id="linhasCatViewport"></div><div class="linha-cat-dots" id="linhasCatDots">${arr.map((_,i)=>`<button class="linha-cat-dot ${i===catalogLinhasState.lineLogical?'active':''}" type="button" aria-label="Linha ${i+1}" onclick="irLinhaCatalogo(${i},event)"></button>`).join('')}</div></div>`;
 }
 function moverLinhaCatalogo(dir,event){
-  event?.stopPropagation();
+  event?.stopPropagation();event?.preventDefault?.();
   if(!catalogLinhasData.length)return;
   catalogLinhasState.lineLogical=(catalogLinhasState.lineLogical+dir+catalogLinhasData.length)%catalogLinhasData.length;
+  resetarModeloDaLinha(catalogLinhasState.lineLogical);
   renderLinhaCatalogoAtual(true);
 }
 function irLinhaCatalogo(index,event){
-  event?.stopPropagation();
+  event?.stopPropagation();event?.preventDefault?.();
   if(!catalogLinhasData.length)return;
   catalogLinhasState.lineLogical=((Number(index)||0)%catalogLinhasData.length+catalogLinhasData.length)%catalogLinhasData.length;
+  resetarModeloDaLinha(catalogLinhasState.lineLogical);
   renderLinhaCatalogoAtual(true);
 }
-let linhaProdutoPointer={active:false,startX:0,startY:0,moved:false};
-function linhaProdutoPointerStart(e){
-  if(e.button!==undefined && e.button!==0)return;
+let linhaHeaderPointer={active:false,startX:0,startY:0,pointerId:null,moved:false};
+function linhaHeaderPointerStart(e){
+  if(e.pointerType==='mouse'&&e.button!==0)return;
+  if(e.target?.closest('button'))return;
   e.stopPropagation();
-  linhaProdutoPointer={active:true,startX:e.clientX,startY:e.clientY,moved:false};
+  linhaHeaderPointer={active:true,startX:e.clientX,startY:e.clientY,pointerId:e.pointerId,moved:false};
   e.currentTarget.setPointerCapture?.(e.pointerId);
+}
+function linhaHeaderPointerEnd(e){
+  if(!linhaHeaderPointer.active)return;
+  e.stopPropagation();
+  const dx=e.clientX-linhaHeaderPointer.startX,dy=e.clientY-linhaHeaderPointer.startY;
+  linhaHeaderPointer.active=false;
+  if(Math.abs(dx)>42&&Math.abs(dx)>Math.abs(dy)*1.15)moverLinhaCatalogo(dx<0?1:-1,e);
+}
+function linhaHeaderPointerCancel(e){e?.stopPropagation();linhaHeaderPointer.active=false;}
+let linhaProdutoPointer={active:false,startX:0,startY:0,pointerId:null,moved:false};
+function linhaProdutoPointerStart(e){
+  if(e.pointerType==='mouse'&&e.button!==0)return;
+  e.stopPropagation();
+  linhaProdutoPointer={active:true,startX:e.clientX,startY:e.clientY,pointerId:e.pointerId,moved:false};
+  e.currentTarget.setPointerCapture?.(e.pointerId);
+}
+function linhaProdutoPointerMove(e){
+  if(!linhaProdutoPointer.active)return;
+  e.stopPropagation();
+  const dx=e.clientX-linhaProdutoPointer.startX,dy=e.clientY-linhaProdutoPointer.startY;
+  if(Math.abs(dx)>12&&Math.abs(dx)>Math.abs(dy)*1.15){linhaProdutoPointer.moved=true;e.preventDefault?.();}
 }
 function linhaProdutoPointerEnd(e){
   if(!linhaProdutoPointer.active)return;
   e.stopPropagation();
   const dx=e.clientX-linhaProdutoPointer.startX,dy=e.clientY-linhaProdutoPointer.startY;
   linhaProdutoPointer.active=false;
-  if(Math.abs(dx)>45 && Math.abs(dx)>Math.abs(dy)*1.15){
-    moverProdutoLinhaCatalogo(dx<0?1:-1,e);
-  }
+  if(Math.abs(dx)>38&&Math.abs(dx)>Math.abs(dy)*1.1)moverProdutoLinhaCatalogo(dx<0?1:-1,e);
 }
-function linhaProdutoPointerCancel(e){
-  e?.stopPropagation();
-  linhaProdutoPointer.active=false;
-}
+function linhaProdutoPointerCancel(e){e?.stopPropagation();linhaProdutoPointer.active=false;}
+function linhaProdutoPointerLeave(e){if(e.pointerType==='mouse'&&linhaProdutoPointer.active)linhaProdutoPointerEnd(e);}
 function moverProdutoLinhaCatalogo(dir,event){
-  event?.stopPropagation();
-  const l=catalogLinhaAtual();
-  if(!l)return;
-  const modelos=modelosOrdenadosLinha(l.modelos),total=modelos.length;
-  if(total<2)return;
-  const real=catalogLinhasState.lineLogical;
-  const atual=Number(catalogLinhasState.productLogical[String(real)]||0);
+  event?.stopPropagation();event?.preventDefault?.();
+  const l=catalogLinhaAtual();if(!l)return;
+  const modelos=modelosOrdenadosLinha(l.modelos),total=modelos.length;if(total<2)return;
+  const real=catalogLinhasState.lineLogical,atual=Number(catalogLinhasState.productLogical[String(real)]||0);
   catalogLinhasState.productLogical[String(real)]=(atual+dir+total)%total;
-  renderLinhaCatalogoAtual(false);
+  renderLinhaCatalogoAtual(true);
 }
 function irProdutoLinhaCatalogo(index,event){
-  event?.stopPropagation();
+  event?.stopPropagation();event?.preventDefault?.();
   const l=catalogLinhaAtual();if(!l)return;
   const total=modelosOrdenadosLinha(l.modelos).length;if(!total)return;
   catalogLinhasState.productLogical[String(catalogLinhasState.lineLogical)]=((Number(index)||0)%total+total)%total;
-  renderLinhaCatalogoAtual(false);
+  renderLinhaCatalogoAtual(true);
 }
 async function renderCatalogLinhas(){
   const panel=document.getElementById('catalogLinhasPanel');if(!panel)return;
@@ -2099,6 +2153,7 @@ async function renderCatalogLinhas(){
     catalogLinhasData=arr;
     if(!arr.length){panel.innerHTML='<div style="display:flex;justify-content:space-between;gap:10px;align-items:center;flex-wrap:wrap"><div><h3 style="margin:0">📚 Linhas / Mostruários</h3><div class="muted" style="margin-top:4px">As linhas ficam disponíveis aqui para consulta e envio, mas <b>não entram no PDF/JPG do catálogo</b>.</div></div><small class="muted">0 linha(s)</small></div>'+renderCatalogLinhasMarkup(arr);return;}
     catalogLinhasState.lineLogical=Math.max(0,Math.min(Number(catalogLinhasState.lineLogical)||0,arr.length-1));
+    const validKeys=new Set(arr.map((_,i)=>String(i))); Object.keys(catalogLinhasState.productLogical).forEach(k=>{if(!validKeys.has(k))delete catalogLinhasState.productLogical[k];}); arr.forEach((_,i)=>{if(!Object.prototype.hasOwnProperty.call(catalogLinhasState.productLogical,String(i)))catalogLinhasState.productLogical[String(i)]=0;});
     panel.innerHTML='<div style="display:flex;justify-content:space-between;gap:10px;align-items:center;flex-wrap:wrap"><div><h3 style="margin:0">📚 Linhas / Mostruários</h3><div class="muted" style="margin-top:4px">As linhas ficam disponíveis aqui para consulta e envio, mas <b>não entram no PDF/JPG do catálogo</b>.</div></div><small class="muted">'+arr.length+' linha(s)</small></div>'+renderCatalogLinhasMarkup(arr);
     renderLinhaCatalogoAtual(false);
   }catch(e){panel.innerHTML='<div class="muted">Não foi possível carregar as linhas.</div>';}
