@@ -41,19 +41,19 @@ table{width:100%;border-collapse:collapse}th,td{padding:7px;border-bottom:1px so
 .linha-modal-body{padding:18px}.linha-grid{display:grid;grid-template-columns:1.7fr 1fr;gap:12px}.linha-model-list{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin-top:12px}.linha-model-card{border:1px solid #d5dfd8;border-radius:14px;padding:9px;background:#fff}.linha-model-card img{width:100%;aspect-ratio:1;object-fit:cover;border-radius:9px;background:#eef3ef}.linha-model-card h4{font-size:12px;margin:7px 0 5px}.linha-model-card p{font-size:10px;line-height:1.45;margin:0;color:#526057}.linha-pill{display:inline-block;background:#eaf3ed;color:#075b35;border-radius:20px;padding:4px 7px;font-size:9px;font-weight:800;margin-top:6px}.linha-upload{border:2px dashed #c9d6cd;border-radius:12px;padding:12px;text-align:center;background:#fbfdfb}.linha-preview{margin-top:16px;border:1px solid #d5dfd8;border-radius:16px;padding:12px;background:#fff}.linha-preview-title{background:#075b35;color:#fff;border-radius:30px;padding:12px;text-align:center;font-size:22px;font-weight:800}.linha-preview-hero{display:grid;grid-template-columns:2fr 1fr;gap:12px;margin-top:12px}.linha-preview-hero img{width:100%;height:330px;object-fit:cover;border-radius:13px;background:#eef3ef}.linha-benefits{border:1px solid #d5dfd8;border-radius:13px;padding:14px}.linha-benefits div{margin-bottom:12px;font-size:12px}.linha-benefits b{display:block;color:#075b35}.linha-empty{padding:22px;text-align:center;color:#68756d;border:2px dashed #cbd8cf;border-radius:12px}.linha-row-actions{display:flex;flex-wrap:wrap;gap:9px;margin-top:12px}
 /* V3 — catálogo de linhas com carrossel infinito de linhas e modelos */
 .linhas-cat-wrap{margin-top:14px;position:relative}
-.linhas-cat-viewport{overflow:hidden;border-radius:18px}
+.linhas-cat-viewport{overflow:hidden;border-radius:18px;touch-action:pan-y}
 .linhas-cat-track{display:flex;transition:transform .32s cubic-bezier(.22,.61,.36,1);will-change:transform}
 .linha-cat-slide{flex:0 0 100%;width:100%;padding:2px}
 .linha-cat-card{border:1px solid #d5dfd8;border-radius:18px;background:#fff;padding:14px}
 .linha-cat-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:10px}
 .linha-cat-head h4{margin:0;color:#075b35;font-size:18px}
 .linha-cat-counter{font-size:11px;color:#68756d;font-weight:700}
-.linha-cat-product{position:relative;overflow:hidden;border:1px solid #e0e7e1;border-radius:16px;background:#f8faf8}
+.linha-cat-product{position:relative;overflow:hidden;border:1px solid #e0e7e1;border-radius:16px;background:#f8faf8;touch-action:pan-y;user-select:none;-webkit-user-select:none}
 .linha-cat-product-track{display:flex;transition:transform .28s cubic-bezier(.22,.61,.36,1);will-change:transform}
-.linha-cat-product-slide{flex:0 0 100%;width:100%;padding:12px;display:grid;grid-template-columns:minmax(0,1.25fr) minmax(220px,.75fr);gap:14px;align-items:stretch}
-.linha-cat-photo{height:360px;border-radius:13px;background:#eef3ef;overflow:hidden;display:flex;align-items:flex-start;justify-content:center}
+.linha-cat-product-slide{flex:0 0 100%;width:100%;padding:10px;display:flex;align-items:center;justify-content:center}
+.linha-cat-photo{width:100%;height:500px;border-radius:13px;background:#eef3ef;overflow:hidden;display:flex;align-items:flex-start;justify-content:center}
 .linha-cat-photo img{width:100%;height:100%;object-fit:cover;object-position:center top;display:block}
-.linha-cat-info{background:#fff;border:1px solid #dce5de;border-radius:13px;padding:16px;display:flex;flex-direction:column;justify-content:center}
+.linha-cat-info{display:none}
 .linha-cat-info .tag{display:inline-block;align-self:flex-start;background:#eaf3ed;color:#075b35;border-radius:20px;padding:5px 8px;font-size:10px;font-weight:900;text-transform:uppercase}
 .linha-cat-info h5{margin:10px 0 7px;font-size:20px;color:#172019}
 .linha-cat-info p{margin:0;font-size:12px;line-height:1.65;color:#536158}
@@ -66,8 +66,8 @@ table{width:100%;border-collapse:collapse}th,td{padding:7px;border-bottom:1px so
 .linha-cat-dot,.linha-prod-dot{width:7px;height:7px;border-radius:50%;background:#c9d4cc;cursor:pointer}
 .linha-cat-dot.active,.linha-prod-dot.active{background:#075b35;transform:scale(1.15)}
 .linha-cat-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
-@media(max-width:760px){.linha-cat-product-slide{grid-template-columns:1fr}.linha-cat-photo{height:430px}.linha-cat-nav{top:215px}.linhas-cat-nav{width:38px;height:38px}.linha-cat-head{padding-right:35px}}
-@media(max-width:500px){.linha-cat-photo{height:390px}.linha-cat-info h5{font-size:17px}.linha-cat-info{padding:13px}.linha-cat-product-slide{padding:8px}.linha-cat-nav{top:195px}}
+@media(max-width:760px){.linha-cat-photo{height:430px}.linha-cat-nav{top:215px}.linhas-cat-nav{width:38px;height:38px}.linha-cat-head{padding-right:35px}}
+@media(max-width:500px){.linha-cat-photo{height:390px}.linha-cat-product-slide{padding:8px}.linha-cat-nav{top:195px}}
 
 @media(max-width:850px){.linha-grid,.linha-preview-hero{grid-template-columns:1fr}.linha-model-list{grid-template-columns:repeat(2,1fr)}}
 @media(max-width:500px){.linha-model-list{grid-template-columns:1fr}.linha-modal{padding:6px}.linha-modal-body{padding:12px}}
@@ -1970,6 +1970,13 @@ async function sincronizarCatalogoComProdutos(){
 let catalogLinhasState={linePhysical:1,lineLogical:0,productLogical:{}};
 function linhaPhotoSrc(modelo){return String(modelo?.fotos?.[0]||'').trim();}
 function linhaEscJs(v){return String(v??'').replace(/\\/g,'\\\\').replace(/'/g,"\\'").replace(/\n/g,' ');}
+function ordemModeloLinha(tipo){
+  const ordem={'Gola Polo Masculino':0,'Gola Polo Feminino':1,'Regata':2,'Camisa Comum':3,'Baby Look':4};
+  return Object.prototype.hasOwnProperty.call(ordem,String(tipo||''))?ordem[String(tipo)]:99;
+}
+function modelosOrdenadosLinha(modelos){
+  return (Array.isArray(modelos)?modelos:[]).map((m,i)=>({...m,__ordemLinha:ordemModeloLinha(m?.tipo),__origemLinha:i})).sort((a,b)=>a.__ordemLinha-b.__ordemLinha||a.__origemLinha-b.__origemLinha);
+}
 function renderCatalogLinhasMarkup(arr){
   const realCount=arr.length;
   if(!realCount)return '<div class="linha-empty" style="margin-top:12px">Nenhuma linha cadastrada. Crie uma em <b>Produtos → Nova linha</b>.</div>';
@@ -1977,19 +1984,18 @@ function renderCatalogLinhasMarkup(arr){
   const slides=clones.map((l,physical)=>{
     const realIndex=(physical-1+realCount)%realCount;
     const titulo=esc(l.titulo||'Nova Linha');
-    const modelos=Array.isArray(l.modelos)?l.modelos:[];
+    const modelos=modelosOrdenadosLinha(l.modelos);
     const pCount=modelos.length;
     const logical=Number(catalogLinhasState.productLogical[String(realIndex)]||0);
     const pClones=pCount?[modelos[pCount-1],...modelos,modelos[0]]:[];
-    const productSlides=pClones.map((m,pp)=>{
+    const productSlides=pClones.map(m=>{
       const foto=escAttr(linhaPhotoSrc(m));
-      const specs=(m.especificacoes||[]).slice(0,6).map(esc).join('<br>• ');
-      return `<div class="linha-cat-product-slide"><div class="linha-cat-photo">${foto?`<img src="${foto}" alt="${esc(m.tipo||'Modelo')}" loading="lazy" referrerpolicy="no-referrer">`:'<div class="linha-empty" style="margin:auto;border:0">📷 Sem foto</div>'}</div><div class="linha-cat-info"><span class="tag">Modelo da linha</span><h5>${esc(m.tipo||'Modelo')}</h5><p><b>Especificações</b><br>• ${specs||'Personalização profissional'}</p></div></div>`;
+      return `<div class="linha-cat-product-slide"><div class="linha-cat-photo">${foto?`<img src="${foto}" alt="${esc(m.tipo||'Modelo')}" loading="lazy" referrerpolicy="no-referrer">`:'<div class="linha-empty" style="margin:auto;border:0">📷 Sem foto</div>'}</div></div>`;
     }).join('');
-    const pDots=pCount?modelos.map((_,i)=>`<button class="linha-prod-dot ${i===logical?'active':''}" type="button" aria-label="Modelo ${i+1}" onclick="irProdutoLinhaCatalogo(${realIndex},${i})"></button>`).join(''):'';
-    return `<section class="linha-cat-slide" data-line-real="${realIndex}"><div class="linha-cat-card"><div class="linha-cat-head"><div><span class="linha-pill">LINHA</span><h4>${titulo}</h4></div><span class="linha-cat-counter">${pCount} modelo(s)</span></div><div class="linha-cat-product" data-product-carousel="${realIndex}" ontouchstart="linhaProdutoTouchStart(event,${realIndex})" ontouchend="linhaProdutoTouchEnd(event,${realIndex})"><div class="linha-cat-product-track" id="linhaProdTrack_${realIndex}">${productSlides}</div>${pCount>1?`<button class="linha-cat-nav left" type="button" aria-label="Modelo anterior" onclick="moverProdutoLinhaCatalogo(${realIndex},-1,event)">‹</button><button class="linha-cat-nav right" type="button" aria-label="Próximo modelo" onclick="moverProdutoLinhaCatalogo(${realIndex},1,event)">›</button>`:''}</div><div class="linha-prod-dots" id="linhaProdDots_${realIndex}">${pDots}</div><div class="linha-cat-actions"><button class="secondary" type="button" onclick="editarLinhaSalva('${escAttr(l.id)}')">✏️ Editar</button><button class="primary" type="button" onclick="enviarLinhaSalva('${escAttr(l.id)}')">📤 Enviar Linha</button></div></div></section>`;
+    const pDots=pCount?modelos.map((_,i)=>`<button class="linha-prod-dot ${i===logical?'active':''}" type="button" aria-label="Modelo ${i+1}" onclick="irProdutoLinhaCatalogo(${realIndex},${i});event.stopPropagation()"></button>`).join(''):'';
+    return `<section class="linha-cat-slide" data-line-real="${realIndex}"><div class="linha-cat-card"><div class="linha-cat-head"><div><span class="linha-pill">LINHA</span><h4>${titulo}</h4></div><span class="linha-cat-counter">${pCount} modelo(s)</span></div><div class="linha-cat-product" data-product-carousel="${realIndex}" onpointerdown="linhaProdutoPointerStart(event,${realIndex})" onpointerup="linhaProdutoPointerEnd(event,${realIndex})" ontouchstart="linhaProdutoTouchStart(event,${realIndex})" ontouchend="linhaProdutoTouchEnd(event,${realIndex})"><div class="linha-cat-product-track" id="linhaProdTrack_${realIndex}">${productSlides}</div>${pCount>1?`<button class="linha-cat-nav left" type="button" aria-label="Modelo anterior" onclick="moverProdutoLinhaCatalogo(${realIndex},-1,event)">‹</button><button class="linha-cat-nav right" type="button" aria-label="Próximo modelo" onclick="moverProdutoLinhaCatalogo(${realIndex},1,event)">›</button>`:''}</div><div class="linha-prod-dots" id="linhaProdDots_${realIndex}">${pDots}</div><div class="linha-cat-actions"><button class="secondary" type="button" onclick="editarLinhaSalva('${escAttr(l.id)}')">✏️ Editar</button><button class="primary" type="button" onclick="enviarLinhaSalva('${escAttr(l.id)}')">📤 Enviar Linha</button></div></div></section>`;
   }).join('');
-  return `<div class="linhas-cat-wrap"><button class="linhas-cat-nav left" type="button" aria-label="Linha anterior" onclick="moverLinhaCatalogo(-1,event)">‹</button><button class="linhas-cat-nav right" type="button" aria-label="Próxima linha" onclick="moverLinhaCatalogo(1,event)">›</button><div class="linhas-cat-viewport" id="linhasCatViewport" ontouchstart="linhaCatTouchStart(event)" ontouchend="linhaCatTouchEnd(event)"><div class="linhas-cat-track" id="linhasCatTrack">${slides}</div></div><div class="linha-cat-dots" id="linhasCatDots">${arr.map((_,i)=>`<button class="linha-cat-dot ${i===catalogLinhasState.lineLogical?'active':''}" type="button" aria-label="Linha ${i+1}" onclick="irLinhaCatalogo(${i})"></button>`).join('')}</div></div>`;
+  return `<div class="linhas-cat-wrap"><button class="linhas-cat-nav left" type="button" aria-label="Linha anterior" onclick="moverLinhaCatalogo(-1,event)">‹</button><button class="linhas-cat-nav right" type="button" aria-label="Próxima linha" onclick="moverLinhaCatalogo(1,event)">›</button><div class="linhas-cat-viewport" id="linhasCatViewport" onpointerdown="linhaCatPointerStart(event)" onpointerup="linhaCatPointerEnd(event)" ontouchstart="linhaCatTouchStart(event)" ontouchend="linhaCatTouchEnd(event)"><div class="linhas-cat-track" id="linhasCatTrack">${slides}</div></div><div class="linha-cat-dots" id="linhasCatDots">${arr.map((_,i)=>`<button class="linha-cat-dot ${i===catalogLinhasState.lineLogical?'active':''}" type="button" aria-label="Linha ${i+1}" onclick="irLinhaCatalogo(${i});event.stopPropagation()"></button>`).join('')}</div></div>`;
 }
 function aplicarPosicaoLinhaCatalogo(animate=true){
   const track=document.getElementById('linhasCatTrack');if(!track)return;const physical=catalogLinhasState.linePhysical;track.style.transition=animate?'transform .32s cubic-bezier(.22,.61,.36,1)':'none';track.style.transform=`translate3d(${-physical*100}%,0,0)`;document.querySelectorAll('#linhasCatDots .linha-cat-dot').forEach((d,i)=>d.classList.toggle('active',i===catalogLinhasState.lineLogical));
@@ -1999,11 +2005,15 @@ function aplicarPosicaoProdutoLinhaCatalogo(realIndex,animate=true){
   const track=document.getElementById('linhaProdTrack_'+realIndex);if(!track)return;const slideCount=track.children.length;if(slideCount<2)return;const logical=((Number(catalogLinhasState.productLogical[String(realIndex)]||0)% (slideCount-2))+(slideCount-2))%(slideCount-2);const physical=logical+1;track.style.transition=animate?'transform .28s cubic-bezier(.22,.61,.36,1)':'none';track.style.transform=`translate3d(${-physical*100}%,0,0)`;document.querySelectorAll('#linhaProdDots_'+realIndex+' .linha-prod-dot').forEach((d,i)=>d.classList.toggle('active',i===logical));}
 function moverLinhaCatalogo(dir,event){event?.stopPropagation();const track=document.getElementById('linhasCatTrack');if(!track)return;const total=track.children.length-2;if(total<1)return;catalogLinhasState.linePhysical+=dir;catalogLinhasState.lineLogical=(catalogLinhasState.lineLogical+dir+total)%total;aplicarPosicaoLinhaCatalogo(true);setTimeout(()=>{if(catalogLinhasState.linePhysical===0){catalogLinhasState.linePhysical=total+1;aplicarPosicaoLinhaCatalogo(false)}else if(catalogLinhasState.linePhysical===total+1){catalogLinhasState.linePhysical=1;aplicarPosicaoLinhaCatalogo(false)}},340);}
 function irLinhaCatalogo(index){const track=document.getElementById('linhasCatTrack');if(!track)return;const total=track.children.length-2;index=((index%total)+total)%total;catalogLinhasState.lineLogical=index;catalogLinhasState.linePhysical=index+1;aplicarPosicaoLinhaCatalogo(true);}
-let linhaCatTouchX=0,linhaProdTouch={};
-function linhaCatTouchStart(e){linhaCatTouchX=e.changedTouches?.[0]?.clientX||0}
-function linhaCatTouchEnd(e){const x=e.changedTouches?.[0]?.clientX||0,d=x-linhaCatTouchX;if(Math.abs(d)>45)moverLinhaCatalogo(d<0?1:-1,e)}
+let linhaCatTouchX=0,linhaProdTouch={},linhaCatPointerX=0,linhaProdPointerX={};
+function linhaCatTouchStart(e){if(e.target?.closest?.('.linha-cat-product'))return;linhaCatTouchX=e.changedTouches?.[0]?.clientX||0}
+function linhaCatTouchEnd(e){if(e.target?.closest?.('.linha-cat-product'))return;const x=e.changedTouches?.[0]?.clientX||0,d=x-linhaCatTouchX;if(Math.abs(d)>45)moverLinhaCatalogo(d<0?1:-1,e)}
 function linhaProdutoTouchStart(e,real){e.stopPropagation();linhaProdTouch[real]=e.changedTouches?.[0]?.clientX||0}
 function linhaProdutoTouchEnd(e,real){e.stopPropagation();const x=e.changedTouches?.[0]?.clientX||0,d=x-(linhaProdTouch[real]||x);if(Math.abs(d)>45)moverProdutoLinhaCatalogo(real,d<0?1:-1,e)}
+function linhaCatPointerStart(e){if(e.target?.closest?.('.linha-cat-product'))return;e.stopPropagation();linhaCatPointerX=e.clientX||0}
+function linhaCatPointerEnd(e){if(e.target?.closest?.('.linha-cat-product'))return;e.stopPropagation();const d=(e.clientX||0)-linhaCatPointerX;if(Math.abs(d)>45)moverLinhaCatalogo(d<0?1:-1,e)}
+function linhaProdutoPointerStart(e,real){e.stopPropagation();linhaProdPointerX[real]=e.clientX||0}
+function linhaProdutoPointerEnd(e,real){e.stopPropagation();const d=(e.clientX||0)-(linhaProdPointerX[real]||e.clientX||0);if(Math.abs(d)>45)moverProdutoLinhaCatalogo(real,d<0?1:-1,e)}
 function moverProdutoLinhaCatalogo(real,dir,event){event?.stopPropagation();const track=document.getElementById('linhaProdTrack_'+real);if(!track)return;const total=track.children.length-2;if(total<1)return;let physical=Number(catalogLinhasState.productLogical[String(real)]||0)+1+dir;let logical;if(physical===0){logical=total-1}else if(physical===total+1){logical=0}else{logical=physical-1}catalogLinhasState.productLogical[String(real)]=logical;track.style.transition='transform .28s cubic-bezier(.22,.61,.36,1)';track.style.transform=`translate3d(${-physical*100}%,0,0)`;document.querySelectorAll('#linhaProdDots_'+real+' .linha-prod-dot').forEach((d,i)=>d.classList.toggle('active',i===logical));setTimeout(()=>{if(physical===0){track.style.transition='none';track.style.transform=`translate3d(${-total*100}%,0,0)`}else if(physical===total+1){track.style.transition='none';track.style.transform='translate3d(-100%,0,0)'}},300);}
 function irProdutoLinhaCatalogo(real,index){const track=document.getElementById('linhaProdTrack_'+real);if(!track)return;const total=track.children.length-2;index=((index%total)+total)%total;catalogLinhasState.productLogical[String(real)]=index;track.style.transition='transform .28s cubic-bezier(.22,.61,.36,1)';track.style.transform=`translate3d(${-(index+1)*100}%,0,0)`;document.querySelectorAll('#linhaProdDots_'+real+' .linha-prod-dot').forEach((d,i)=>d.classList.toggle('active',i===index));}
 async function renderCatalogLinhas(){
@@ -2719,7 +2729,7 @@ function adicionarModeloLinha(){
 }
 function renderLinhaPreview(){
   const titulo=(document.getElementById('linhaTitulo')?.value||linhaAtual?.titulo||'NOVA LINHA').trim()||'NOVA LINHA';const t=document.getElementById('linhaPreviewTitulo');if(t)t.textContent=titulo;
-  const hero=document.getElementById('linhaHeroImg'),modelos=document.getElementById('linhaModelosPreview');const ms=linhaAtual?.modelos||[];if(hero)hero.src=ms[0]?.fotos?.[0]||'';
+  const hero=document.getElementById('linhaHeroImg'),modelos=document.getElementById('linhaModelosPreview');const ms=modelosOrdenadosLinha(linhaAtual?.modelos||[]);if(hero)hero.src=ms[0]?.fotos?.[0]||'';
   if(modelos)modelos.innerHTML=ms.length?ms.map((m,i)=>`<article class="linha-model-card"><img src="${escAttr(m.fotos[0]||'')}" alt="${escAttr(m.tipo)}"><h4>${i+1}. ${esc(m.tipo)}</h4><p><b>Especificações</b><br>• ${(m.especificacoes||[]).map(esc).join('<br>• ')}</p><button class="secondary" type="button" style="width:100%;margin-top:7px;padding:7px" onclick="removerModeloLinha('${m.id}')">Remover</button></article>`).join(''):'<div class="linha-empty" style="grid-column:1/-1">Os modelos adicionados aparecerão aqui.</div>';
 }
 function removerModeloLinha(id){if(!linhaAtual)return;linhaAtual.modelos=linhaAtual.modelos.filter(m=>m.id!==id);renderLinhaPreview();}
@@ -2751,7 +2761,7 @@ function escAttr(v){return esc(v).replace(/`/g,'&#96;')}
 async function exportarLinhaMostruario(){
   if(!linhaAtual||!linhaAtual.modelos?.length){alert('Adicione pelo menos um modelo à linha.');return;}
   const titulo=(document.getElementById('linhaTitulo')?.value||linhaAtual.titulo||'NOVA LINHA').trim();linhaAtual.titulo=titulo;
-  const modelos=linhaAtual.modelos.slice();const W=1240,H=1754;const canvas=document.createElement('canvas');canvas.width=W;canvas.height=H;const ctx=canvas.getContext('2d');
+  const modelos=modelosOrdenadosLinha(linhaAtual.modelos);const W=1240,H=1754;const canvas=document.createElement('canvas');canvas.width=W;canvas.height=H;const ctx=canvas.getContext('2d');
   const load=src=>new Promise(r=>{if(!src)return r(null);const im=new Image();im.onload=()=>r(im);im.onerror=()=>r(null);im.src=src;});
   const round=(x,y,w,h,r,fill=true)=>{ctx.beginPath();ctx.roundRect(x,y,w,h,r);if(fill)ctx.fill();};
   ctx.fillStyle='#f7f7f2';ctx.fillRect(0,0,W,H);ctx.fillStyle='#062519';ctx.fillRect(0,0,W,195);ctx.fillStyle='#f7be14';ctx.fillRect(0,0,W,8);
