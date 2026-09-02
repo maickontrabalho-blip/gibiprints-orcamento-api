@@ -86,6 +86,17 @@ table{width:100%;border-collapse:collapse}th,td{padding:7px;border-bottom:1px so
 @media(max-width:850px){.linha-grid,.linha-preview-hero{grid-template-columns:1fr}.linha-model-list{grid-template-columns:repeat(2,1fr)}}
 @media(max-width:500px){.linha-model-list{grid-template-columns:1fr}.linha-modal{padding:6px}.linha-modal-body{padding:12px}}
 .linha-pill{line-height:1.25;text-transform:uppercase}
+
+/* V10 — carrossel de Linhas no painel de Produtos: setas junto ao nome, mantendo o card da versão anterior */
+.linha-admin-slide-inner{padding:14px 12px;text-align:center}
+.linha-admin-titlebar{display:grid;grid-template-columns:42px 1fr 42px;align-items:center;gap:8px;min-height:74px}
+.linha-admin-titlecenter{min-width:0}
+.linha-admin-titlecenter .linha-pill{display:inline-block}
+.linha-admin-slide h4{margin:6px 0 3px;font-size:20px;color:#075b35;text-transform:uppercase;line-height:1.15}
+.linha-admin-title-nav{width:38px;height:38px;border:0;border-radius:50%;background:rgba(255,255,255,.98);color:#075b35;box-shadow:0 2px 9px rgba(0,0,0,.14);font-size:27px;font-weight:900;cursor:pointer;justify-self:center;display:flex;align-items:center;justify-content:center}
+.linha-admin-title-nav:active{transform:scale(.96)}
+.linha-admin-nav{display:none!important}
+@media(max-width:600px){.linha-admin-slide{padding:10px 18px}.linha-admin-titlebar{grid-template-columns:38px 1fr 38px;gap:6px}.linha-admin-title-nav{width:36px;height:36px}.linha-admin-slide h4{font-size:18px}.linha-admin-slide-inner{padding:12px 8px}}
 </style>
 
 <link rel="manifest" href="manifest.json">
@@ -2903,7 +2914,12 @@ async function renderLinhasAdmin(){
         const xNome=esc(x.titulo); const xQtd=x.modelos?.length||0; const xAtivo=x.catalogo_ativo!==false;
         const xId=escAttr(x.id);
         return '<article class="linha-admin-slide" data-linha-admin-index="'+i+'"><div class="linha-admin-slide-inner">'
-          +'<div class="linha-pill">LINHA</div><h4>'+xNome+'</h4><p>'+xQtd+' modelo(s)</p><small class="muted">'+(xAtivo?'🟢 ATIVA NO CATÁLOGO':'🔴 OCULTA DO CATÁLOGO')+'</small>'
+          +'<div class="linha-admin-titlebar">'
+          +'<button class="linha-admin-title-nav" type="button" aria-label="Linha anterior" onclick="moverLinhaAdmin(-1,event)">‹</button>'
+          +'<div class="linha-admin-titlecenter"><div class="linha-pill">LINHA</div><h4>'+xNome+'</h4></div>'
+          +'<button class="linha-admin-title-nav" type="button" aria-label="Próxima linha" onclick="moverLinhaAdmin(1,event)">›</button>'
+          +'</div>'
+          +'<p>'+xQtd+' modelo(s)</p><small class="muted">'+(xAtivo?'🟢 ATIVA NO CATÁLOGO':'🔴 OCULTA DO CATÁLOGO')+'</small>'
           +'<div class="linha-row-actions">'
           +'<button class="secondary" type="button" onclick="editarLinhaSalva(\''+xId+'\')">✏️ Editar</button>'
           +'<button class="secondary" type="button" onclick="alternarCatalogoLinha(\''+xId+'\')">'+(xAtivo?'🙈 Ocultar do catálogo':'👁️ Mostrar no catálogo')+'</button>'
@@ -2913,8 +2929,6 @@ async function renderLinhasAdmin(){
       }).join('');
       body+='<div class="linha-admin-carousel" id="linhaAdminCarousel" onpointerdown="linhaAdminPointerStart(event)" onpointermove="linhaAdminPointerMove(event)" onpointerup="linhaAdminPointerEnd(event)" onpointercancel="linhaAdminPointerCancel(event)">'
         +'<div class="linha-admin-track" style="transform:translateX(-'+linhaAdminLogical*100+'%)">'+slides+'</div>'
-        +'<button class="linha-admin-nav left" type="button" aria-label="Linha anterior" onclick="moverLinhaAdmin(-1,event)">‹</button>'
-        +'<button class="linha-admin-nav right" type="button" aria-label="Próxima linha" onclick="moverLinhaAdmin(1,event)">›</button>'
         +'</div>'
         +'<div class="linha-admin-dots">'+arr.map((_,i)=>'<button class="linha-admin-dot '+(i===linhaAdminLogical?'active':'')+'" type="button" aria-label="Linha '+(i+1)+'" onclick="irLinhaAdmin('+i+',event)"></button>').join('')+'</div>';
     }else body+='<div class="linha-empty" style="margin-top:12px">Nenhuma linha cadastrada ainda.</div>';
