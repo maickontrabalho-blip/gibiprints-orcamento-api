@@ -39,6 +39,20 @@ table{width:100%;border-collapse:collapse}th,td{padding:7px;border-bottom:1px so
 .linha-modal.open{display:flex}.linha-modal-card{width:min(1080px,100%);margin:12px auto;background:#fff;border-radius:20px;box-shadow:0 24px 70px rgba(0,0,0,.25);overflow:hidden}
 .linha-modal-head{background:#062519;border-top:8px solid #f7be14;color:#fff;padding:18px 20px;display:flex;justify-content:space-between;gap:12px;align-items:center}.linha-modal-head h2{color:#fff;margin:0}.linha-modal-head small{color:#f7be14;font-weight:700}
 .linha-modal-body{padding:18px}.linha-grid{display:grid;grid-template-columns:1.7fr 1fr;gap:12px}.linha-model-list{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin-top:12px}.linha-model-card{border:1px solid #d5dfd8;border-radius:14px;padding:9px;background:#fff}.linha-model-card img{width:100%;aspect-ratio:1;object-fit:cover;border-radius:9px;background:#eef3ef}.linha-model-card h4{font-size:12px;margin:7px 0 5px}.linha-model-card p{font-size:10px;line-height:1.45;margin:0;color:#526057}.linha-pill{display:inline-block;background:#eaf3ed;color:#075b35;border-radius:20px;padding:4px 7px;font-size:9px;font-weight:800;margin-top:6px}.linha-upload{border:2px dashed #c9d6cd;border-radius:12px;padding:12px;text-align:center;background:#fbfdfb}.linha-preview{margin-top:16px;border:1px solid #d5dfd8;border-radius:16px;padding:12px;background:#fff}.linha-preview-title{background:#075b35;color:#fff;border-radius:30px;padding:12px;text-align:center;font-size:22px;font-weight:800}.linha-preview-hero{display:grid;grid-template-columns:2fr 1fr;gap:12px;margin-top:12px}.linha-preview-hero img{width:100%;height:330px;object-fit:cover;border-radius:13px;background:#eef3ef}.linha-benefits{border:1px solid #d5dfd8;border-radius:13px;padding:14px}.linha-benefits div{margin-bottom:12px;font-size:12px}.linha-benefits b{display:block;color:#075b35}.linha-empty{padding:22px;text-align:center;color:#68756d;border:2px dashed #cbd8cf;border-radius:12px}.linha-row-actions{display:flex;flex-wrap:wrap;gap:9px;margin-top:12px}
+/* V9 — painel de Linhas compacto: uma linha por vez, com carrossel por gesto/setas, sem fotos */
+.linha-admin-carousel{position:relative;margin-top:12px;overflow:hidden;border:1px solid #d5dfd8;border-radius:16px;background:#fff;touch-action:pan-y}
+.linha-admin-track{display:flex;transition:transform .28s cubic-bezier(.22,.61,.36,1);will-change:transform}
+.linha-admin-slide{flex:0 0 100%;width:100%;padding:14px 52px;box-sizing:border-box}
+.linha-admin-slide-inner{border:1px solid #e1e8e2;border-radius:14px;background:#fdfefd;padding:14px;text-align:center}
+.linha-admin-slide h4{margin:7px 0 4px;font-size:20px;color:#075b35;text-transform:uppercase}
+.linha-admin-slide p{margin:0;color:#526057;font-size:13px}
+.linha-admin-slide .muted{font-size:12px}
+.linha-admin-nav{position:absolute;top:50%;transform:translateY(-50%);width:38px;height:38px;border:0;border-radius:50%;background:rgba(255,255,255,.96);color:#075b35;box-shadow:0 2px 10px rgba(0,0,0,.16);font-size:26px;font-weight:900;z-index:3;cursor:pointer}
+.linha-admin-nav.left{left:10px}.linha-admin-nav.right{right:10px}
+.linha-admin-dots{display:flex;justify-content:center;gap:6px;margin:10px 0 2px}
+.linha-admin-dot{width:7px;height:7px;border-radius:50%;background:#c9d4cc;border:0;padding:0}
+.linha-admin-dot.active{background:#075b35;transform:scale(1.15)}
+@media(max-width:600px){.linha-admin-slide{padding:12px 46px}.linha-admin-slide h4{font-size:18px}.linha-admin-slide-inner{padding:12px}.linha-row-actions{justify-content:center}.linha-admin-nav{width:36px;height:36px}}
 /* V3 — catálogo de linhas com carrossel infinito de linhas e modelos */
 .linhas-cat-wrap{margin-top:14px;position:relative}
 .linhas-cat-viewport{overflow:hidden;border-radius:18px;touch-action:pan-y}
@@ -211,7 +225,7 @@ window.addEventListener('unhandledrejection', function(e){
  <div style="width:min(420px,100%);background:#fff;border-radius:20px;padding:24px;box-shadow:0 20px 60px rgba(0,0,0,.25);">
   <div style="text-align:center;margin-bottom:20px;"><div style="font-size:34px;font-weight:900;color:#0b6b35;">GIBIPRINTS</div><div style="font-size:14px;color:#68736b;margin-top:4px;">Estamparia • Cada estampa conta uma história</div></div>
   <h2 style="margin:0 0 6px;color:#18201b;">Entrar no sistema</h2>
-  <p style="margin:0 0 16px;color:#68736b;font-size:13px;">Acesse sua conta para sincronizar clientes e pedidos na nuvem.</p>
+  <p style="margin:0 0 16px;color:#68736b;font-size:13px;">Acesse sua conta para sincronizar clientes, pedidos, produtos e linhas na nuvem.</p>
   <label style="display:block;font-size:12px;font-weight:700;color:#68736b;margin-bottom:5px;">E-mail</label>
   <input id="cloudEmail" type="email" autocomplete="username" placeholder="seu@email.com" style="width:100%;padding:12px;border:1px solid #ccd7ca;border-radius:9px;font-size:15px;margin-bottom:10px;box-sizing:border-box;">
   <label style="display:block;font-size:12px;font-weight:700;color:#68736b;margin-bottom:5px;">Senha</label>
@@ -636,9 +650,10 @@ async function sincronizarCatalogoAtual(){
     await initCatalogStorage();
     const d=await hydrateCatalogPhotos(getCatalogData());
     const produtos=(d.produtos||[]).filter(p=>p && p.nome && p.ativo!==false);
-    if(!produtos.length){alert('O catálogo atual está vazio. Nada será enviado para a nuvem.');return false;}
+    const linhasLocais=await linhaAll();
+    if(!produtos.length && !linhasLocais.length){alert('O catálogo e as linhas estão vazios. Nada será enviado para a nuvem.');return false;}
 
-    cloudMsg(`Sincronizando ${produtos.length} produto(s) e removendo registros antigos...`);
+    cloudMsg(`Sincronizando ${produtos.length} produto(s) e ${linhasLocais.length} linha(s) para a nuvem...`);
 
     // O backup é um ESPELHO do catálogo atual: tudo que não existe mais
     // no catálogo local é removido da nuvem antes de sincronizar os atuais.
@@ -672,9 +687,16 @@ async function sincronizarCatalogoAtual(){
       PRODUCTS[p.nome]=precos;produtosOk++;
     }
     persistProductsLocal();cloudStoresSynced.delete('produtos');
-    cloudMsg(`Backup concluído: ${produtosOk} produto(s) sincronizado(s), ${antigos.length} antigo(s) removido(s).`);
-    renderItems();renderProdutoAdmin();renderResumo();
-    alert(`Backup concluído!\n\nProdutos sincronizados: ${produtosOk}\nRegistros antigos removidos da nuvem: ${antigos.length}\nFotos novas enviadas: ${fotosNovas}\nFotos que já estavam na nuvem: ${fotosExistentes}`);
+
+    // A sincronização do catálogo também atualiza o BACKUP COMPLETO na nuvem.
+    // Isso inclui as Linhas / Mostruários, que ficam em IndexedDB separado dos produtos.
+    const snapshotCompleto=await montarSnapshotBackup();
+    await salvarSnapshotBackupNuvem(snapshotCompleto);
+    const linhasEnviadas=Array.isArray(snapshotCompleto.linhas)?snapshotCompleto.linhas.length:0;
+
+    cloudMsg(`Backup concluído: ${produtosOk} produto(s) e ${linhasEnviadas} linha(s) sincronizados.`);
+    renderItems();renderProdutoAdmin();renderResumo();renderLinhasAdmin();renderCatalogLinhas();
+    alert(`Backup concluído!\n\nProdutos sincronizados: ${produtosOk}\nLinhas / Mostruários sincronizados: ${linhasEnviadas}\nRegistros antigos removidos da nuvem: ${antigos.length}\nFotos novas enviadas: ${fotosNovas}\nFotos que já estavam na nuvem: ${fotosExistentes}`);
     return true;
   }catch(e){
     console.error('Backup do catálogo:',e);cloudMsg('Erro no backup do catálogo.');
@@ -995,7 +1017,7 @@ async function exportarBackup(){
 
 async function restaurarUltimoBackupNuvem(){
  if(!sbSession){alert('Faça login na nuvem antes de restaurar.');return;}
- if(!confirm('Restaurar o ÚLTIMO backup salvo na nuvem?\n\nIsso substituirá os clientes, pedidos e produtos deste aparelho pelo conteúdo do último backup.'))return;
+ if(!confirm('Restaurar o ÚLTIMO backup salvo na nuvem?\n\nIsso substituirá os clientes, pedidos, produtos e linhas deste aparelho pelo conteúdo do último backup.'))return;
  try{
   cloudMsg('Buscando último backup na nuvem...');
   const {data,error}=await sbClient.from('pedidos').select('sync_id,dados').eq('sync_id',CLOUD_BACKUP_SYNC_ID).maybeSingle();
@@ -2868,26 +2890,64 @@ function removerModeloLinha(id){if(!linhaAtual)return;linhaAtual.modelos=linhaAt
 async function salvarLinhaAtual(){
   if(!linhaAtual)return;const titulo=(document.getElementById('linhaTitulo')?.value||linhaAtual.titulo||'').trim();if(!titulo){alert('Informe o título da linha.');return;}if(!linhaAtual.modelos.length){alert('Adicione pelo menos um modelo à linha.');return;}linhaAtual.titulo=titulo;linhaAtual.atualizadoEm=new Date().toISOString();await linhaPut(linhaAtual);if(sbSession){try{await salvarSnapshotBackupNuvem(await montarSnapshotBackup());cloudMsg('Linha salva e incluída no backup da nuvem.');}catch(e){console.warn('Backup da linha na nuvem:',e);cloudMsg('Linha salva neste aparelho; backup da nuvem pendente.');}}alert('Linha salva com sucesso.');renderLinhasAdmin();renderCatalogLinhas();
 }
+let linhaAdminLogical=0;
+let linhaAdminPointer={active:false,startX:0,startY:0,pointerId:null};
 async function renderLinhasAdmin(){
   const panel=document.getElementById('linhasAdminPanel');if(!panel)return;
   try{
     const arr=(await linhaAll()).sort((a,b)=>String(b.atualizadoEm).localeCompare(String(a.atualizadoEm)));
     let body='<div style="display:flex;justify-content:space-between;gap:10px;align-items:center;flex-wrap:wrap"><h3 style="margin:0">📚 Linhas / Mostruários</h3><small class="muted">'+arr.length+' linha(s) salva(s)</small></div>';
     if(arr.length){
-      body+='<div class="linha-model-list">'+arr.map(l=>{
-        const lid=escAttr(l.id); const nome=esc(l.titulo); const qtd=l.modelos?.length||0;
-        const ativo=l.catalogo_ativo!==false;
-        return '<article class="linha-model-card"><div class="linha-pill">LINHA</div><h4>'+nome+'</h4><p>'+qtd+' modelo(s)</p><small class="muted">'+(ativo?'🟢 ATIVA NO CATÁLOGO':'🔴 OCULTA DO CATÁLOGO')+'</small><div class="linha-row-actions">'
-          +'<button class="secondary" type="button" onclick="editarLinhaSalva(\''+lid+'\')">✏️ Editar</button>'
-          +'<button class="secondary" type="button" onclick="alternarCatalogoLinha(\''+lid+'\')">'+(ativo?'🙈 Ocultar do catálogo':'👁️ Mostrar no catálogo')+'</button>'
-          +'<button class="primary" type="button" onclick="enviarLinhaSalva(\''+lid+'\')">📤 Enviar Linha</button>'
-          +'<button class="secondary" type="button" onclick="excluirLinhaSalva(\''+lid+'\')">🗑️ Excluir</button>'
-          +'</div></article>';
-      }).join('')+'</div>';
+      linhaAdminLogical=((Number(linhaAdminLogical)||0)%arr.length+arr.length)%arr.length;
+      const slides=arr.map((x,i)=>{
+        const xNome=esc(x.titulo); const xQtd=x.modelos?.length||0; const xAtivo=x.catalogo_ativo!==false;
+        const xId=escAttr(x.id);
+        return '<article class="linha-admin-slide" data-linha-admin-index="'+i+'"><div class="linha-admin-slide-inner">'
+          +'<div class="linha-pill">LINHA</div><h4>'+xNome+'</h4><p>'+xQtd+' modelo(s)</p><small class="muted">'+(xAtivo?'🟢 ATIVA NO CATÁLOGO':'🔴 OCULTA DO CATÁLOGO')+'</small>'
+          +'<div class="linha-row-actions">'
+          +'<button class="secondary" type="button" onclick="editarLinhaSalva(\''+xId+'\')">✏️ Editar</button>'
+          +'<button class="secondary" type="button" onclick="alternarCatalogoLinha(\''+xId+'\')">'+(xAtivo?'🙈 Ocultar do catálogo':'👁️ Mostrar no catálogo')+'</button>'
+          +'<button class="primary" type="button" onclick="enviarLinhaSalva(\''+xId+'\')">📤 Enviar Linha</button>'
+          +'<button class="secondary" type="button" onclick="excluirLinhaSalva(\''+xId+'\')">🗑️ Excluir</button>'
+          +'</div></div></article>';
+      }).join('');
+      body+='<div class="linha-admin-carousel" id="linhaAdminCarousel" onpointerdown="linhaAdminPointerStart(event)" onpointermove="linhaAdminPointerMove(event)" onpointerup="linhaAdminPointerEnd(event)" onpointercancel="linhaAdminPointerCancel(event)">'
+        +'<div class="linha-admin-track" style="transform:translateX(-'+linhaAdminLogical*100+'%)">'+slides+'</div>'
+        +'<button class="linha-admin-nav left" type="button" aria-label="Linha anterior" onclick="moverLinhaAdmin(-1,event)">‹</button>'
+        +'<button class="linha-admin-nav right" type="button" aria-label="Próxima linha" onclick="moverLinhaAdmin(1,event)">›</button>'
+        +'</div>'
+        +'<div class="linha-admin-dots">'+arr.map((_,i)=>'<button class="linha-admin-dot '+(i===linhaAdminLogical?'active':'')+'" type="button" aria-label="Linha '+(i+1)+'" onclick="irLinhaAdmin('+i+',event)"></button>').join('')+'</div>';
     }else body+='<div class="linha-empty" style="margin-top:12px">Nenhuma linha cadastrada ainda.</div>';
     panel.innerHTML=body;
-  }catch(e){panel.innerHTML='<div class="muted">Não foi possível carregar as linhas salvas.</div>';}
+  }catch(e){panel.innerHTML='<div class="muted">Não foi possível carregar as linhas salvas.</div>';console.warn('Linhas admin:',e);}
 }
+function moverLinhaAdmin(dir,event){
+  event?.stopPropagation();event?.preventDefault?.();
+  linhaGetAllForAdmin().then(arr=>{if(!arr.length)return;linhaAdminLogical=(linhaAdminLogical+dir+arr.length)%arr.length;renderLinhasAdmin();});
+}
+function irLinhaAdmin(index,event){
+  event?.stopPropagation();event?.preventDefault?.();
+  linhaGetAllForAdmin().then(arr=>{if(!arr.length)return;linhaAdminLogical=((Number(index)||0)%arr.length+arr.length)%arr.length;renderLinhasAdmin();});
+}
+async function linhaGetAllForAdmin(){return (await linhaAll()).sort((a,b)=>String(b.atualizadoEm).localeCompare(String(a.atualizadoEm)));}
+function linhaAdminPointerStart(e){
+  if(e.pointerType==='mouse'&&e.button!==0)return;
+  if(e.target?.closest('button'))return;
+  linhaAdminPointer={active:true,startX:e.clientX,startY:e.clientY,pointerId:e.pointerId};
+  e.currentTarget.setPointerCapture?.(e.pointerId);
+}
+function linhaAdminPointerMove(e){
+  if(!linhaAdminPointer.active)return;
+  const dx=e.clientX-linhaAdminPointer.startX,dy=e.clientY-linhaAdminPointer.startY;
+  if(Math.abs(dx)>10&&Math.abs(dx)>Math.abs(dy)*1.1)e.preventDefault?.();
+}
+function linhaAdminPointerEnd(e){
+  if(!linhaAdminPointer.active)return;
+  const dx=e.clientX-linhaAdminPointer.startX,dy=e.clientY-linhaAdminPointer.startY;
+  linhaAdminPointer.active=false;
+  if(Math.abs(dx)>38&&Math.abs(dx)>Math.abs(dy)*1.1)moverLinhaAdmin(dx<0?1:-1,e);
+}
+function linhaAdminPointerCancel(e){linhaAdminPointer.active=false;e?.stopPropagation();}
 async function editarLinhaSalva(id){const l=await linhaGet(id);if(!l)return;linhaAtual=JSON.parse(JSON.stringify(l));linhaFotosTemporarias=[];popularTiposLinha();document.getElementById('linhaTitulo').value=l.titulo||'';renderLinhaFotosTemp();renderLinhaPreview();document.getElementById('linhaModal').classList.add('open');document.getElementById('linhaModal').setAttribute('aria-hidden','false');}
 async function enviarLinhaSalva(id){const l=await linhaGet(id);if(!l)return;linhaAtual=JSON.parse(JSON.stringify(l));document.getElementById('linhaTitulo').value=l.titulo||'';renderLinhaPreview();await exportarLinhaMostruario();}
 async function alternarCatalogoLinha(id){
