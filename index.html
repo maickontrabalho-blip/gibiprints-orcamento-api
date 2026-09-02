@@ -1014,7 +1014,35 @@ let PRODUCTS={
 let PRODUCT_META={};
 loadProductsLocal();
 const RANGES=["1–9","10–19","20–49","50+"];
-const COLORS=["Branco","Preto","Vermelho","Cinza","Rosa Pink","Rosa Bebê","Amarelo Canário","Amarelo Bebê","Bege","Lilás","Laranja","Marrom","Areia","Azul Marinho","Azul Royal","Azul Celeste","Azul Turquesa","Verde Bandeira","Verde Limão","Verde Água","Cinza Mescla"];
+const COLORS=[
+  "Branco",
+  "Preto",
+  "Vermelho",
+  "Cinza",
+  "Rosa Pink",
+  "Rosa Bebê",
+  "Amarelo Canário",
+  "Amarelo Bebê",
+  "Bege",
+  "Lilás",
+  "Laranja",
+  "Marrom",
+  "Areia",
+  "Azul Marinho",
+  "Azul Royal",
+  "Azul Celeste",
+  "Azul Turquesa",
+  "Verde Bandeira",
+  "Verde Limão",
+  "Verde Água",
+  "Cinza Mescla"
+];
+function colorOptions(selected){
+  const value=String(selected||'');
+  const list=COLORS.slice();
+  if(value && !list.includes(value)) list.unshift(value);
+  return list.map(c=>`<option value="${escAttr(c)}" ${c===value?'selected':''}>${esc(c)}</option>`).join('');
+}
 let items=[];
 
 function round2(v){return Math.round((Number(v)||0)*100)/100;}
@@ -1276,7 +1304,7 @@ function renderItems(){
   <div class="itemtop"><strong>Item ${idx+1}</strong><button class="danger" onclick="removeItem(${it.id})">Remover</button></div>
   <div class="grid" style="margin-top:9px">
    <div><label>Produto</label><div style="display:flex;gap:8px;align-items:center"><div data-budget-img="${esc(it.product)}" style="width:58px;height:58px;border-radius:10px;background:#f1f4f0;display:flex;align-items:center;justify-content:center;overflow:hidden;flex:0 0 58px"><span style="opacity:.35">👕</span></div><select style="flex:1" onchange="setItem(${it.id},'product',this.value)">${Object.keys(PRODUCTS).map(p=>`<option ${p===it.product?'selected':''}>${p}</option>`).join('')}</select></div></div>
-   <div><label>Cor</label><select onchange="setItem(${it.id},'color',this.value)">${COLORS.map(c=>`<option ${c===it.color?'selected':''}>${c}</option>`).join('')}</select></div>
+   <div><label>Cor</label><select onchange="setItem(${it.id},'color',this.value)">${colorOptions(it.color)}</select></div>
    ${isCap ? `<div class="full"><label>Quantidade de bonés</label><select onchange="setQty(${it.id},this.value)">${quantidadeOptions(it.qty,'bonés')}</select></div>` : `<div><label>${/infantil/i.test(String(it.product||''))?'Idade':'Tamanho'}</label><select onchange="setItem(${it.id},'size',this.value)">${tamanhoOptions(it.size||(/infantil/i.test(String(it.product||''))?'02':'P'),it.product)}</select></div><div><label>Quantidade</label><select onchange="setQty(${it.id},this.value)">${quantidadeOptions(it.qty,'unidades')}</select></div>`}
    <div class="full"><label>Faixa de preço</label><select onchange="setItem(${it.id},'priceTier',this.value)">${priceTierOptions(it.priceTier||'auto')}</select><p class="muted" style="margin:5px 0 0">Automático usa a faixa da quantidade. Você pode escolher outra para aplicar o preço especial combinado com o cliente.</p></div>
    <div class="full"><label>Estampa / personalização</label><input value="${esc(it.art)}" onchange="setItem(${it.id},'art',this.value)"></div>
