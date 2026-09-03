@@ -28,7 +28,7 @@ V18 — upload robusto de fotos das linhas: compressão apenas para a cópia da 
 O backup usa um inventário único de mídias e envia também todas as fotos de Linhas/Mostruários ao Supabase Storage, mantendo referências remotas no snapshot para restauração.
 
 
-## V20 — fotos completas + envio das fotos das linhas
+## V21 — fotos completas + envio das fotos das linhas
 - Backup da nuvem registra a origem e o ID de cada foto de produto e de linha.
 - Fotos são deduplicadas por conteúdo para reduzir tempo e tráfego de upload.
 - O backup consulta o Storage antes de reenviar arquivos já existentes e usa até 4 uploads simultâneos.

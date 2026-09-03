@@ -229,6 +229,13 @@ header{z-index:20!important}
 .linha-row-actions button{width:100%!important;min-height:48px!important}
 @media(max-width:500px){.tabbar .tabbtn,#tabCatalogo{font-size:10px!important;padding:9px 3px!important}.linha-row-actions{grid-template-columns:repeat(2,minmax(0,1fr))!important}}
 </style>
+
+<style id="v21-product-photo-actions">
+/* V21 — botão de envio das fotos dos produtos, sem alterar o restante do cartão. */
+.catalog-product-actions{display:grid!important;grid-template-columns:repeat(3,minmax(0,1fr));gap:7px!important}
+.catalog-product-actions button{min-width:0!important;white-space:normal!important;line-height:1.15!important}
+@media(max-width:520px){.catalog-product-actions{grid-template-columns:repeat(3,minmax(0,1fr));gap:5px!important}.catalog-product-actions button{padding:9px 5px!important;font-size:11px!important}}
+</style>
 </head>
 <body>
 
@@ -807,6 +814,7 @@ async function prepararSnapshotNuvem(snapshot){
  out.midia={total:midia.total,novas:midia.novas,existentes:midia.existentes,manifest};
  out.cloudSchema='GIBIPRINTS_CLOUD_BACKUP_V5';
  out.midiaLinhas={total:(out.linhas||[]).reduce((n,l)=>n+Number(l.fotosSincronizadas||0),0),status:'sincronizadas-no-storage'};
+ out.midiaProdutos={total:manifest.filter(x=>x?.tipo==='catalogo').length,status:'sincronizadas-no-storage'};
  return out;
 }
 
@@ -1382,7 +1390,7 @@ async function exportarBackup(){
   if(sbSession)cloudSnapshot=await salvarSnapshotBackupNuvem(snapshot);
   const blob=new Blob([JSON.stringify(snapshot,null,2)],{type:'application/json'});
   const a=document.createElement('a');a.download='GIBIPRINTS_BACKUP_'+new Date().toISOString().slice(0,10)+'.json';a.href=URL.createObjectURL(blob);a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000);
-  const midiaQtd=Number((cloudSnapshot||snapshot)?.midia?.total||0); const midiaNovas=Number(cloudSnapshot?.midia?.novas||0); const midiaExistentes=Number(cloudSnapshot?.midia?.existentes||0); alert(sbSession?`Backup concluído: arquivo salvo e último backup gravado na nuvem.\n\nMídias encontradas: ${midiaQtd}\nNovas enviadas: ${midiaNovas}\nJá existentes: ${midiaExistentes}\nFotos das linhas: ${Number((cloudSnapshot||snapshot)?.midiaLinhas?.total||0)}`:`Backup em arquivo concluído.\n\nMídias encontradas: ${midiaQtd}\nFaça login na nuvem para gravar também na nuvem.`);
+  const midiaQtd=Number((cloudSnapshot||snapshot)?.midia?.total||0); const midiaNovas=Number(cloudSnapshot?.midia?.novas||0); const midiaExistentes=Number(cloudSnapshot?.midia?.existentes||0); const fotosProdutos=Number((cloudSnapshot||snapshot)?.midiaProdutos?.total||((cloudSnapshot||snapshot)?.midia?.manifest||[]).filter(x=>x?.tipo==='catalogo').length||0); const fotosLinhas=Number((cloudSnapshot||snapshot)?.midiaLinhas?.total||((cloudSnapshot||snapshot)?.midia?.manifest||[]).filter(x=>x?.tipo==='linha').length||0); alert(sbSession?`Backup concluído: arquivo salvo e último backup gravado na nuvem.\n\nMídias encontradas: ${midiaQtd}\nFotos dos produtos: ${fotosProdutos}\nFotos das linhas: ${fotosLinhas}\nNovas enviadas: ${midiaNovas}\nJá existentes: ${midiaExistentes}`:`Backup em arquivo concluído.\n\nMídias encontradas: ${midiaQtd}\nFotos dos produtos: ${fotosProdutos}\nFotos das linhas: ${fotosLinhas}\nFaça login na nuvem para gravar também na nuvem.`);
  }catch(e){console.error('Backup:',e);alert('Não foi possível concluir o backup.\n\n'+(e?.message||e));}
 }
 
@@ -1391,7 +1399,32 @@ async function restaurarFotosCatalogoDoBackup(snapshot){
   const refs=manifest.filter(x=>x?.tipo==='catalogo'&&x?.public_url&&x?.produtoId);
   if(!refs.length)return {restauradas:0,produtos:0};
   await initCatalogStorage();
-  const d=getCatalogData();
+
+  /* Reconstrói o catálogo antes de restaurar as fotos. Isso é essencial quando
+     o telefone perdeu o IndexedDB: as fotos precisam de um produto ao qual ficar vinculadas. */
+  const atual=getCatalogData()||{produtos:[],config:defaultCatalogData().config};
+  const meta=JSON.parse(JSON.stringify(snapshot?.productMeta||PRODUCT_META||{}));
+  const nomes=Object.keys(snapshot?.produtos||{});
+  const porId=new Map((atual.produtos||[]).map(p=>[String(p.id||''),p]));
+  const porNome=new Map((atual.produtos||[]).map(p=>[normalizeProdutoNome(p.nome),p]));
+  const reconstruidos=[];
+
+  for(const nome of nomes){
+    const m=meta[nome]||{};
+    const id=String(m.catalog_id||'');
+    let p=(id&&porId.get(id))||porNome.get(normalizeProdutoNome(nome));
+    if(!p){
+      const precos=Array.isArray(snapshot.produtos[nome])?snapshot.produtos[nome]:[0,0,0,0];
+      p=normalizeCatalogProduct({id:id||crypto.randomUUID(),nome,categoria:m.categoria||'Produto',descricao:m.descricao||'',ativo:m.catalogo_ativo!==false,fotoIds:m.catalog_fotoIds||[],faixas:[
+        {aPartir:1,valor:Number(precos[0])||0},{aPartir:10,valor:Number(precos[1])||0},{aPartir:20,valor:Number(precos[2])||0},{aPartir:50,valor:Number(precos[3])||0}
+      ]});
+    }
+    p.id=id||p.id;
+    p.nome=nome;p.categoria=m.categoria||p.categoria||'Produto';p.descricao=m.descricao??p.descricao??'';p.ativo=m.catalogo_ativo!==false;p.fotoIds=Array.isArray(m.catalog_fotoIds)?m.catalog_fotoIds.slice(0,30):Array.isArray(p.fotoIds)?p.fotoIds.slice(0,30):[];
+    reconstruidos.push(p);
+  }
+  if(reconstruidos.length)atual.produtos=reconstruidos;
+
   let restauradas=0;
   const porProduto=new Map();
   for(const ref of refs){
@@ -1407,17 +1440,20 @@ async function restaurarFotosCatalogoDoBackup(snapshot){
       restauradas++;
     }catch(e){console.warn('Falha ao restaurar foto de produto:',ref?.public_url,e);}
   }
-  for(const p of (d.produtos||[])){
+
+  for(const p of (atual.produtos||[])){
     const refsP=porProduto.get(String(p.id));
-    if(!refsP?.length)continue;
-    refsP.sort((a,b)=>a.ordem-b.ordem);
-    p.fotoIds=refsP.map(x=>x.id).slice(0,30);
+    if(refsP?.length){
+      refsP.sort((a,b)=>a.ordem-b.ordem);
+      p.fotoIds=refsP.map(x=>x.id).slice(0,30);
+    }
+    const m=meta[p.nome]||{};
+    PRODUCT_META[p.nome]={...(PRODUCT_META[p.nome]||{}),...m,catalog_id:p.id,catalog_fotoIds:p.fotoIds||[]};
   }
-  await catalogPut(CATALOG_STORE,{id:'singleton',data:d,versao:12,atualizadoEm:new Date().toISOString()});
-  catalogDataCache=d;
+  await catalogPut(CATALOG_STORE,{id:'singleton',data:atual,versao:13,atualizadoEm:new Date().toISOString()});
+  catalogDataCache=atual;
   return {restauradas,produtos:porProduto.size};
 }
-
 async function restaurarMidiaEspecialBackup(midia){
  const ref=(midia?.manifest||[]).find(x=>x?.origem==='qr_code'&&x?.public_url);
  if(!ref)return;
@@ -1441,11 +1477,11 @@ async function restaurarUltimoBackupNuvem(){
   for(const c of clientes)await localDbPut('clientes',c);
   for(const p of pedidos)await localDbPut('pedidos',p);
   await substituirLinhasLocais(linhas);
-  await restaurarMidiaEspecialBackup(snapshot.midia);
-  await restaurarFotosCatalogoDoBackup(snapshot);
   PRODUCTS={...(snapshot.produtos||{})};
   PRODUCT_META={...(snapshot.productMeta||{})};
   persistProductsLocal();
+  await restaurarMidiaEspecialBackup(snapshot.midia);
+  await restaurarFotosCatalogoDoBackup(snapshot);
   cloudStoresSynced.add('clientes');
   cloudStoresSynced.add('pedidos');
   cloudStoresSynced.add('produtos');
@@ -2618,7 +2654,7 @@ async function renderCatalogAdmin(){
       const status=catalogoAtivo?'🟢 ATIVO NO CATÁLOGO':'🔴 OCULTO DO CATÁLOGO';
       const media=ids.length?`<div id="catcar_${i}" class="catalog-admin-carousel catalog-single-carousel" data-product-index="${i}" data-photo-ids="${escAttr(JSON.stringify(ids))}" data-photo-index="0" ontouchstart="iniciarSwipeFotoAdmin(event)" ontouchend="finalizarSwipeFotoAdmin(${i},event)"><div class="catalog-single-slide"><div class="catalog-photo-placeholder">📷</div></div></div>`:'<div class="catalog-no-photo">📷<br>Imagem não cadastrada<br><small>Cadastre em Produtos</small></div>';
       const controls=ids.length>1?`<button class="catalog-admin-nav left" type="button" aria-label="Foto anterior" onclick="moverFotoAdmin(${i},-1,event)">‹</button><button class="catalog-admin-nav right" type="button" aria-label="Próxima foto" onclick="moverFotoAdmin(${i},1,event)">›</button><div class="catalog-admin-dots">${ids.map((_,j)=>`<span class="catalog-admin-dot${j===0?' active':''}" data-dot-index="${j}"></span>`).join('')}</div>`:'';
-      return `<article class="catalog-admin-card" data-catalog-card="${i}"><div class="cat-img" style="position:relative">${media}${controls}</div><div class="cat-body"><div style="display:flex;justify-content:space-between;gap:8px;align-items:center"><span class="pill">${esc(p.categoria||'Produto')}</span><small style="opacity:.7">${status}</small></div><h3 style="margin:8px 0 4px">${esc(p.nome||'Produto')}</h3><div class="muted" style="font-size:12px;min-height:30px">${esc(p.descricao||'')}</div><div class="actions" style="margin-top:10px"><button class="secondary" type="button" onclick="alternarCatalogoProduto(${i})">${catalogoAtivo?'🙈 Ocultar do catálogo':'👁️ Mostrar no catálogo'}</button><button class="primary" type="button" onclick="enviarLinhaCatalogo(${i})">📤 Enviar Linha</button></div></div></article>`;
+      return `<article class="catalog-admin-card" data-catalog-card="${i}"><div class="cat-img" style="position:relative">${media}${controls}</div><div class="cat-body"><div style="display:flex;justify-content:space-between;gap:8px;align-items:center"><span class="pill">${esc(p.categoria||'Produto')}</span><small style="opacity:.7">${status}</small></div><h3 style="margin:8px 0 4px">${esc(p.nome||'Produto')}</h3><div class="muted" style="font-size:12px;min-height:30px">${esc(p.descricao||'')}</div><div class="actions catalog-product-actions" style="margin-top:10px"><button class="secondary" type="button" onclick="alternarCatalogoProduto(${i})">${catalogoAtivo?'🙈 Ocultar do catálogo':'👁️ Mostrar no catálogo'}</button><button class="primary" type="button" onclick="enviarLinhaCatalogo(${i})">📤 Enviar Linha</button><button class="primary" type="button" onclick="enviarFotosProdutoCatalogo(${i})">📷 Enviar Fotos</button></div></div></article>`;
     }).join('');
 
     configurarLazyFotosCatalogo();
@@ -2989,6 +3025,39 @@ async function enviarLinhaCatalogo(idx){
   }catch(e){
     console.error('Enviar Linha:',e);
     alert('Não foi possível gerar a arte JPG da linha.\n\n'+(e?.message||e));
+  }
+}
+
+async function enviarFotosProdutoCatalogo(idx){
+  try{
+    const d=await hydrateCatalogPhotos(await sincronizarCatalogoComProdutos());
+    const p=d.produtos?.[Number(idx)];
+    if(!p){alert('Produto não encontrado na aba Produtos.');return;}
+    const fontes=(p.fotos||[]).filter(Boolean).slice(0,30);
+    if(!fontes.length){alert(`O produto "${p.nome||'Produto'}" não possui fotos cadastradas.`);return;}
+    const files=[];
+    for(let i=0;i<fontes.length;i++){
+      const blob=dataUrlToBlob(fontes[i]);
+      if(!blob)continue;
+      const mime=blob.type||'image/jpeg';
+      const ext=extFromMime(mime);
+      const nomeBase=String(p.nome||'produto').replace(/[^a-z0-9À-ÿ]+/gi,' ').trim()||'produto';
+      files.push(new File([blob],`${nomeBase} - Foto ${i+1}.${ext}`,{type:mime,lastModified:Date.now()}));
+    }
+    if(!files.length)throw new Error('Não foi possível preparar as fotos para compartilhamento.');
+    const shareData={title:`Fotos — ${p.nome||'Produto'}`,text:`Fotos do produto ${p.nome||''}`.trim(),files};
+    if(navigator.share && (!navigator.canShare || navigator.canShare({files}))){
+      await navigator.share(shareData);
+      return;
+    }
+    for(const file of files){
+      const url=URL.createObjectURL(file);const a=document.createElement('a');a.href=url;a.download=file.name;a.click();setTimeout(()=>URL.revokeObjectURL(url),1500);
+    }
+    alert(`O navegador não permite compartilhar ${files.length} fotos diretamente. As fotos foram preparadas para download; depois você pode anexá-las no WhatsApp.`);
+  }catch(e){
+    if(e?.name==='AbortError')return;
+    console.error('Enviar fotos do produto:',e);
+    alert('Não foi possível enviar as fotos do produto.\n\n'+(e?.message||e));
   }
 }
 
