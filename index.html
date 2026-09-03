@@ -691,6 +691,47 @@ async function sincronizarFotosProdutoSupabase(produto, cloudProdutoId, onProgre
 async function blobToDataUrl(blob){
   return await new Promise((resolve,reject)=>{const fr=new FileReader();fr.onload=()=>resolve(fr.result);fr.onerror=reject;fr.readAsDataURL(blob);});
 }
+
+/* V18 — Upload robusto das fotos das linhas.
+   O erro 504 acontecia quando uma imagem grande demorava demais no Storage.
+   Aqui reduzimos somente a cópia enviada à nuvem (a imagem local permanece intacta),
+   evitamos reenviar arquivos que já existem e fazemos tentativas graduais. */
+async function prepararImagemLinhaUpload(blob,maxDim=1600,quality=0.80){
+  try{
+    if(!blob?.type?.startsWith('image/'))return blob;
+    if(blob.size<=700*1024 && maxDim>=1600)return blob;
+    const bmp=await createImageBitmap(blob);
+    const escala=Math.min(1,maxDim/Math.max(bmp.width,bmp.height));
+    const w=Math.max(1,Math.round(bmp.width*escala)),h=Math.max(1,Math.round(bmp.height*escala));
+    const canvas=document.createElement('canvas');canvas.width=w;canvas.height=h;
+    const ctx=canvas.getContext('2d',{alpha:false});
+    if(!ctx){bmp.close?.();return blob;}
+    ctx.drawImage(bmp,0,0,w,h);bmp.close?.();
+    const out=await new Promise(resolve=>canvas.toBlob(resolve,'image/jpeg',quality));
+    return out&&out.size<blob.size?out:blob;
+  }catch(e){return blob;}
+}
+async function uploadStorageComRetry(path,blob,options={},tentativas=3){
+  let ultimo=null;
+  for(let tentativa=1;tentativa<=tentativas;tentativa++){
+    try{
+      const up=await sbClient.storage.from(CATALOG_SUPABASE_BUCKET).upload(path,blob,options);
+      if(!up.error)return up;
+      ultimo=up.error;
+      if(/already exists/i.test(up.error.message||''))return up;
+    }catch(e){ultimo=e;}
+    if(tentativa<tentativas)await new Promise(r=>setTimeout(r,900*tentativa));
+  }
+  return {error:ultimo||new Error('falha no upload')};
+}
+async function listarArquivosStorage(prefixo){
+  try{
+    const partes=String(prefixo||'').split('/').filter(Boolean),folder=partes.slice(0,-1).join('/');
+    const {data,error}=await sbClient.storage.from(CATALOG_SUPABASE_BUCKET).list(folder,{limit:100,offset:0,sortBy:{column:'name',order:'asc'}});
+    if(error)return new Set();
+    return new Set((data||[]).map(x=>String(x.name||'')));
+  }catch(e){return new Set();}
+}
 async function sincronizarFotosLinhaSupabase(linha,onProgress){
   if(!sbSession)throw new Error('Faça login na nuvem antes de sincronizar as linhas.');
   const modelos=Array.isArray(linha?.modelos)?linha.modelos:[];
@@ -700,22 +741,39 @@ async function sincronizarFotosLinhaSupabase(linha,onProgress){
     for(let i=0;i<fotos.length;i++)tarefas.push({modelo,i,src:fotos[i]});
   }
   const refsByModel=new Map(modelos.map(m=>[m.id,[]]));
+  const existentesPorPasta=new Map();
+  for(const modelo of modelos){
+    const prefix=`linhas/${linha.id}/${modelo.id}/arquivo`;
+    existentesPorPasta.set(modelo.id,await listarArquivosStorage(prefix));
+  }
   let concluidas=0;
   const worker=async(task)=>{
-    const blob=dataUrlToBlob(task.src);
-    if(!blob)return;
-    const hash=await sha256Hex(blob);
-    const ext=extFromMime(blob.type),path=`linhas/${linha.id}/${task.modelo.id}/${hash}.${ext}`;
-    const up=await sbClient.storage.from(CATALOG_SUPABASE_BUCKET).upload(path,blob,{contentType:blob.type||'image/jpeg',upsert:true,cacheControl:'31536000'});
-    if(up.error)throw new Error(`Foto da linha ${linha.titulo||''} / ${task.modelo.tipo||''}: ${up.error.message||'falha no upload'}`);
+    const original=dataUrlToBlob(task.src);
+    if(!original)return;
+    let blob=await prepararImagemLinhaUpload(original,1600,0.80);
+    let hash=await sha256Hex(blob),ext='jpg',path=`linhas/${linha.id}/${task.modelo.id}/${hash}.${ext}`;
+    let nomeArquivo=path.split('/').pop();
+    let existe=existentesPorPasta.get(task.modelo.id)?.has(nomeArquivo);
+    if(!existe){
+      let up=await uploadStorageComRetry(path,blob,{contentType:blob.type||'image/jpeg',upsert:false,cacheControl:'31536000'},3);
+      if(up.error && !/already exists/i.test(up.error.message||'')){
+        // Segunda chance: cópia ainda menor para atravessar gateways que recusam arquivos grandes.
+        blob=await prepararImagemLinhaUpload(original,1200,0.65);
+        hash=await sha256Hex(blob);path=`linhas/${linha.id}/${task.modelo.id}/${hash}.jpg`;nomeArquivo=path.split('/').pop();
+        up=await uploadStorageComRetry(path,blob,{contentType:'image/jpeg',upsert:false,cacheControl:'31536000'},3);
+      }
+      if(up.error && !/already exists/i.test(up.error.message||''))throw new Error(`Foto da linha ${linha.titulo||''} / ${task.modelo.tipo||''}: ${up.error.message||'falha no upload'}`);
+      if(up.error)existe=true;
+      else existentesPorPasta.get(task.modelo.id)?.add(nomeArquivo);
+    }
     const pub=sbClient.storage.from(CATALOG_SUPABASE_BUCKET).getPublicUrl(path).data.publicUrl;
-    refsByModel.get(task.modelo.id).push({storage_path:path,public_url:pub,content_hash:hash,mime_type:blob.type||'image/jpeg',ordem:task.i});
+    refsByModel.get(task.modelo.id).push({storage_path:path,public_url:pub,content_hash:hash,mime_type:'image/jpeg',ordem:task.i,tamanho_bytes:blob.size});
     concluidas++;
     onProgress?.(concluidas,tarefas.length);
   };
   let cursor=0;
   async function runner(){while(true){const i=cursor++;if(i>=tarefas.length)return;await worker(tarefas[i]);}}
-  const workers=Array.from({length:Math.min(4,Math.max(1,tarefas.length))},()=>runner());
+  const workers=Array.from({length:Math.min(2,Math.max(1,tarefas.length))},()=>runner());
   await Promise.all(workers);
   return modelos.map(m=>({modelId:m.id,fotos:(refsByModel.get(m.id)||[]).sort((a,b)=>Number(a.ordem)-Number(b.ordem))}));
 }

@@ -19,3 +19,6 @@ Esta versão usa a estrutura Supabase já existente do projeto.
 - Clientes e histórico movidos para a área Gestão.
 - Botão Abrir da Gestão leva automaticamente ao pedido específico na área Orçamento para edição.
 - A abertura não cria novo pedido; a lógica existente de atualização/novo permanece no momento de gerar/salvar o orçamento.
+
+
+V18 — upload robusto de fotos das linhas: compressão apenas para a cópia da nuvem, detecção de arquivos já existentes e retry com fallback para imagem menor, mantendo a mídia local original.
