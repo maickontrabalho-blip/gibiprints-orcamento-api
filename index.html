@@ -778,33 +778,38 @@ async function sincronizarFotosLinhaSupabase(linha,onProgress){
   return modelos.map(m=>({modelId:m.id,fotos:(refsByModel.get(m.id)||[]).sort((a,b)=>Number(a.ordem)-Number(b.ordem))}));
 }
 async function prepararSnapshotNuvem(snapshot){
-  const out=JSON.parse(JSON.stringify(snapshot||{}));
-  const linhas=Array.isArray(out.linhas)?out.linhas:[];
-  const compactas=[];
-  for(const linha of linhas){
-    const original=await linhaGet(linha.id).catch(()=>linha);
-    const refs=await sincronizarFotosLinhaSupabase(original||linha,(done,total)=>{if(total)cloudMsg(`☁️ ${linha.titulo||'Linha'}: foto ${done}/${total} sincronizada`);});
-    const clone=JSON.parse(JSON.stringify(linha));
-    clone.modelos=(Array.isArray(clone.modelos)?clone.modelos:[]).map((m)=>{
-      const r=refs.find(x=>x.modelId===m.id);
-      const fotoRefs=Array.isArray(r?.fotos)?r.fotos:[];
-      const fotosOriginais=Array.isArray(m.fotos)?m.fotos.length:0;
-      if(fotosOriginais!==fotoRefs.length)throw new Error(`A linha ${linha.titulo||''} ficou com ${fotoRefs.length} de ${fotosOriginais} foto(s) sincronizada(s) no modelo ${m.tipo||''}.`);
-      delete m.fotos;
-      m.fotosRemotas=fotoRefs;
-      m.fotosCount=fotoRefs.length;
-      return m;
-    });
-    clone.fotosSincronizadas=(clone.modelos||[]).reduce((n,m)=>n+Number(m.fotosCount||0),0);
-    compactas.push(clone);
-  }
-  out.linhas=compactas;
-  const midia=await sincronizarMidiasBackupNuvem();
-  out.midia={total:midia.total,novas:midia.novas,existentes:midia.existentes,manifest:midia.manifest};
-  out.cloudSchema='GIBIPRINTS_CLOUD_BACKUP_V4';
-  out.midiaLinhas={total:(out.linhas||[]).reduce((n,l)=>n+Number(l.fotosSincronizadas||0),0),status:'sincronizadas-no-storage'};
-  return out;
+ const out=JSON.parse(JSON.stringify(snapshot||{}));
+ const midia=await sincronizarMidiasBackupNuvem();
+ const manifest=Array.isArray(midia.manifest)?midia.manifest:[];
+ const linhas=Array.isArray(out.linhas)?out.linhas:[];
+ const compactas=linhas.map(linha=>{
+   const clone=JSON.parse(JSON.stringify(linha));
+   clone.modelos=(Array.isArray(clone.modelos)?clone.modelos:[]).map(m=>{
+     const refs=manifest
+       .filter(x=>String(x?.origem||'').startsWith(`linha:${linha.id}:${m.id}:`))
+       .sort((a,b)=>{
+         const ai=Number(String(a.origem).split(':').pop());
+         const bi=Number(String(b.origem).split(':').pop());
+         return ai-bi;
+       })
+       .map((x,i)=>({storage_path:x.storage_path,public_url:x.public_url,content_hash:x.hash,mime_type:x.mime_type,ordem:i,tamanho_bytes:x.tamanho_bytes}));
+     const fotosOriginais=Array.isArray(m.fotos)?m.fotos.length:0;
+     if(fotosOriginais!==refs.length)throw new Error(`A linha ${linha.titulo||''} ficou com ${refs.length} de ${fotosOriginais} foto(s) sincronizada(s) no modelo ${m.tipo||''}.`);
+     delete m.fotos;
+     m.fotosRemotas=refs;
+     m.fotosCount=refs.length;
+     return m;
+   });
+   clone.fotosSincronizadas=(clone.modelos||[]).reduce((n,m)=>n+Number(m.fotosCount||0),0);
+   return clone;
+ });
+ out.linhas=compactas;
+ out.midia={total:midia.total,novas:midia.novas,existentes:midia.existentes,manifest};
+ out.cloudSchema='GIBIPRINTS_CLOUD_BACKUP_V5';
+ out.midiaLinhas={total:(out.linhas||[]).reduce((n,l)=>n+Number(l.fotosSincronizadas||0),0),status:'sincronizadas-no-storage'};
+ return out;
 }
+
 async function hidratarLinhasDoBackup(linhas){
   const out=[];
   for(const linha of (Array.isArray(linhas)?linhas:[])){
@@ -1217,26 +1222,50 @@ async function registrarPagamento(id){const arr=await dbGetAll('pedidos');const 
 async function excluirPedido(id){if(!confirm('Deseja realmente excluir este orçamento?'))return;await dbDelete('pedidos',id);await renderHistorico();}
 function novoOrcamento(){showTab('orcamento');pedidoEmEdicaoId=null;modoEdicaoPedido='novo';items=[];document.getElementById('cliente').value='';document.getElementById('clienteWhats').value='';document.getElementById('clienteRua').value='';document.getElementById('clienteNumero').value='';document.getElementById('clienteComplemento').value='';document.getElementById('clienteBairro').value='';document.getElementById('clienteCidade').value='Rio de Janeiro';document.getElementById('clienteUF').value='RJ';document.getElementById('clienteCEP').value='';document.getElementById('obs').value='';addItem();window.scrollTo({top:0,behavior:'smooth'});}
 async function coletarMidiasLocaisBackup(){
- const itens=[]; const seen=new Set();
- const add=async(src,origem)=>{if(!src||typeof src!=='string'||!src.startsWith('data:image/'))return;const blob=dataUrlToBlob(src);if(!blob)return;const hash=await sha256Hex(blob);if(seen.has(hash))return;seen.add(hash);itens.push({hash,origem,mime_type:blob.type||'image/jpeg',tamanho_bytes:blob.size,blob});};
+ const itens=[];
+ const add=async(src,origem)=>{
+   if(!src||typeof src!=='string'||!src.startsWith('data:image/'))return;
+   const blob=dataUrlToBlob(src);if(!blob)return;
+   const hash=await sha256Hex(blob);
+   itens.push({hash,origem,mime_type:blob.type||'image/jpeg',tamanho_bytes:blob.size,blob});
+ };
  try{for(const rec of await catalogGetAllPhotos())await add(rec?.data,'catalogo');}catch(e){console.warn('Inventário fotos catálogo:',e);}
- try{for(const l of await linhaAll())for(const m of (l.modelos||[]))for(const f of (m.fotos||[]))await add(f,`linha:${l.id}:${m.id}`);}catch(e){console.warn('Inventário fotos linhas:',e);}
+ try{for(const l of await linhaAll())for(const m of (l.modelos||[]))for(let i=0;i<(m.fotos||[]).length;i++)await add(m.fotos[i],`linha:${l.id}:${m.id}:${i}`);}catch(e){console.warn('Inventário fotos linhas:',e);}
  try{const cfg=getDadosPagamento();await add(cfg.qrCode,'qr_code');}catch(e){}
  return itens;
 }
+
+/* V19 — O backup da nuvem agora usa UM inventário único para todas as mídias.
+   Isso garante que as fotos das Linhas / Mostruários sejam realmente enviadas ao
+   Storage e também fiquem referenciadas dentro do snapshot que será restaurado.
+   Não fazemos deduplicação por origem: cada foto local recebe sua referência;
+   quando o conteúdo é igual, o mesmo arquivo físico pode ser reutilizado pelo hash. */
 async function sincronizarMidiasBackupNuvem(){
- const itens=await coletarMidiasLocaisBackup(); if(!sbSession)return {total:itens.length,novas:0,existentes:itens.length,manifest:itens.map(x=>({hash:x.hash,origem:x.origem,mime_type:x.mime_type,tamanho_bytes:x.tamanho_bytes}))};
- const manifest=new Array(itens.length); let novas=0,existentes=0; let cursor=0;
+ const itens=await coletarMidiasLocaisBackup();
+ if(!sbSession)return {total:itens.length,novas:0,existentes:itens.length,manifest:itens.map(x=>({hash:x.hash,origem:x.origem,mime_type:x.mime_type,tamanho_bytes:x.tamanho_bytes}))};
+ const manifest=new Array(itens.length);let novas=0,existentes=0;let cursor=0;
  async function worker(){
-   while(true){const i=cursor++;if(i>=itens.length)return;const item=itens[i];const ext=extFromMime(item.mime_type);const path=`backup-midia/${item.hash}.${ext}`;
-     const up=await sbClient.storage.from(CATALOG_SUPABASE_BUCKET).upload(path,item.blob,{contentType:item.mime_type,upsert:false,cacheControl:'31536000'});
+   while(true){
+     const i=cursor++;if(i>=itens.length)return;
+     const item=itens[i];
+     let blob=await prepararImagemLinhaUpload(item.blob,1600,0.80);
+     let hash=await sha256Hex(blob);
+     let ext='jpg';
+     let path=`backup-midia/${hash}.${ext}`;
+     let up=await uploadStorageComRetry(path,blob,{contentType:'image/jpeg',upsert:false,cacheControl:'31536000'},3);
+     if(up.error&&!/already exists/i.test(up.error.message||'')){
+       blob=await prepararImagemLinhaUpload(item.blob,1200,0.65);
+       hash=await sha256Hex(blob);path=`backup-midia/${hash}.jpg`;
+       up=await uploadStorageComRetry(path,blob,{contentType:'image/jpeg',upsert:false,cacheControl:'31536000'},3);
+     }
      if(up.error&&!/already exists/i.test(up.error.message||''))throw new Error(`Mídia ${item.origem}: ${up.error.message||'falha no upload'}`);
      if(up.error)existentes++;else novas++;
      const pub=sbClient.storage.from(CATALOG_SUPABASE_BUCKET).getPublicUrl(path).data.publicUrl;
-     manifest[i]={hash:item.hash,origem:item.origem,mime_type:item.mime_type,tamanho_bytes:item.tamanho_bytes,storage_path:path,public_url:pub};
+     manifest[i]={hash,origem:item.origem,mime_type:'image/jpeg',tamanho_bytes:blob.size,storage_path:path,public_url:pub};
    }
  }
- await Promise.all(Array.from({length:Math.min(5,Math.max(1,itens.length))},()=>worker()));
+ const workers=Array.from({length:Math.min(2,Math.max(1,itens.length))},()=>worker());
+ await Promise.all(workers);
  return {total:itens.length,novas,existentes,manifest};
 }
 
@@ -1319,7 +1348,7 @@ async function exportarBackup(){
   if(sbSession)cloudSnapshot=await salvarSnapshotBackupNuvem(snapshot);
   const blob=new Blob([JSON.stringify(snapshot,null,2)],{type:'application/json'});
   const a=document.createElement('a');a.download='GIBIPRINTS_BACKUP_'+new Date().toISOString().slice(0,10)+'.json';a.href=URL.createObjectURL(blob);a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000);
-  const midiaQtd=Number((cloudSnapshot||snapshot)?.midia?.total||0); const midiaNovas=Number(cloudSnapshot?.midia?.novas||0); const midiaExistentes=Number(cloudSnapshot?.midia?.existentes||0); alert(sbSession?`Backup concluído: arquivo salvo e último backup gravado na nuvem.\n\nMídias encontradas: ${midiaQtd}\nNovas enviadas: ${midiaNovas}\nJá existentes: ${midiaExistentes}`:`Backup em arquivo concluído.\n\nMídias encontradas: ${midiaQtd}\nFaça login na nuvem para gravar também na nuvem.`);
+  const midiaQtd=Number((cloudSnapshot||snapshot)?.midia?.total||0); const midiaNovas=Number(cloudSnapshot?.midia?.novas||0); const midiaExistentes=Number(cloudSnapshot?.midia?.existentes||0); alert(sbSession?`Backup concluído: arquivo salvo e último backup gravado na nuvem.\n\nMídias encontradas: ${midiaQtd}\nNovas enviadas: ${midiaNovas}\nJá existentes: ${midiaExistentes}\nFotos das linhas: ${Number((cloudSnapshot||snapshot)?.midiaLinhas?.total||0)}`:`Backup em arquivo concluído.\n\nMídias encontradas: ${midiaQtd}\nFaça login na nuvem para gravar também na nuvem.`);
  }catch(e){console.error('Backup:',e);alert('Não foi possível concluir o backup.\n\n'+(e?.message||e));}
 }
 

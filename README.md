@@ -22,3 +22,7 @@ Esta versão usa a estrutura Supabase já existente do projeto.
 
 
 V18 — upload robusto de fotos das linhas: compressão apenas para a cópia da nuvem, detecção de arquivos já existentes e retry com fallback para imagem menor, mantendo a mídia local original.
+
+
+## V19 — fotos das linhas na nuvem
+O backup usa um inventário único de mídias e envia também todas as fotos de Linhas/Mostruários ao Supabase Storage, mantendo referências remotas no snapshot para restauração.
