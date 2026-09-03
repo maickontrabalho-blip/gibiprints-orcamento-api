@@ -215,6 +215,20 @@ table{width:100%;border-collapse:collapse}th,td{padding:7px;border-bottom:1px so
  .linha-cat-photo{height:285px}
 }
 </style>
+<style id="v15-layout-fixes">
+/* V15 — quatro abas em uma única linha */
+.tabbar{display:flex!important;flex-wrap:nowrap!important;gap:5px!important;overflow:hidden!important;top:0!important;z-index:4!important}
+.tabbar .tabbtn,#tabCatalogo{flex:1 1 0!important;min-width:0!important;white-space:nowrap!important;padding:10px 5px!important;font-size:clamp(10px,2.9vw,13px)!important}
+/* As setas da linha nunca ficam acima do cabeçalho global. */
+header{z-index:20!important}
+.linha-cat-line-nav,.linha-admin-title-nav{z-index:4!important}
+.linhas-cat-wrap,.linha-admin-carousel{position:relative;overflow:hidden!important}
+.linha-cat-line-nav{top:50%;}
+/* Botões das linhas no padrão compacto anterior: 2 por linha. */
+.linha-row-actions{display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:8px!important}
+.linha-row-actions button{width:100%!important;min-height:48px!important}
+@media(max-width:500px){.tabbar .tabbtn,#tabCatalogo{font-size:10px!important;padding:9px 3px!important}.linha-row-actions{grid-template-columns:repeat(2,minmax(0,1fr))!important}}
+</style>
 </head>
 <body>
 
@@ -270,7 +284,9 @@ window.addEventListener('unhandledrejection', function(e){
 <main>
 <div class="tabbar">
   <button id="tabOrcamento" class="tabbtn active" type="button" onclick="showTab('orcamento')">🧾 Orçamento</button>
-  <button id="tabProdutos" class="tabbtn" type="button" onclick="showTab('produtos')">📦 Produtos</button><button class="tab" id="tabCatalogo" type="button" onclick="showTab('catalogo')">🛍️ Catálogo</button>
+  <button id="tabProdutos" class="tabbtn" type="button" onclick="showTab('produtos')">📦 Produtos</button>
+  <button id="tabCatalogo" class="tabbtn" type="button" onclick="showTab('catalogo')">🛍️ Catálogo</button>
+  <button id="tabGestao" class="tabbtn" type="button" onclick="showTab('gestao')">📊 Gestão</button>
 </div>
 <div id="catalogSendBar" class="card" style="display:none!important">
   <button class="primary" type="button" onclick="enviarCatalogoCliente()" style="width:100%;min-height:48px;font-size:15px;">📄 Gerar e enviar catálogo em PDF</button>
@@ -332,20 +348,6 @@ window.addEventListener('unhandledrejection', function(e){
 <div class="full"><label>Observação geral</label><textarea id="obs" placeholder="Observações, arte, entrega, etc."></textarea></div>
 </div>
 <p class="muted">Digite a rua para localizar o bairro e a cidade. O número da casa continua sendo informado por você.</p>
-</div>
-
-<div class="card">
-<h2>👥 Clientes e histórico</h2>
-<button class="secondary db-toggle" type="button" onclick="toggleHistorico()">👥 Selecionar cliente / histórico <span id="historicoChevron">▼</span></button>
-<div id="historicoPainel" class="hidden" style="margin-top:10px;">
-<div class="db-toolbar">
-<input id="buscaClienteHistorico" placeholder="Digite nome ou telefone para buscar..." oninput="renderHistorico()">
-<button class="secondary" type="button" onclick="renderHistorico()">🔎 Buscar</button>
-<button class="secondary" type="button" onclick="novoOrcamento()">＋ Novo orçamento</button>
-</div>
-<div id="historico" class="history-list"><p class="muted">Digite um nome ou telefone para pesquisar.</p></div>
-<div class="actions"><button class="secondary" type="button" onclick="exportarBackup()">💾 Backup (arquivo + nuvem)</button><button class="secondary" type="button" onclick="restaurarUltimoBackupNuvem()">☁️ Restaurar último backup da nuvem</button><button class="secondary" type="button" onclick="document.getElementById('backupInput').click()">📥 Restaurar arquivo</button><input id="backupInput" type="file" accept="application/json" class="hidden" onchange="restaurarBackup(event)"></div>
-</div>
 </div>
 
 <div class="card">
@@ -412,6 +414,35 @@ window.addEventListener('unhandledrejection', function(e){
 </div>
 </div>
 </div>
+<section id="gestaoPanel" class="hidden">
+  <div class="card">
+    <h2>📊 Gestão do negócio</h2>
+    <p class="muted">Acompanhe vendas, recebimentos, custos e lucro dos pedidos confirmados.</p>
+    <div class="grid" id="gestaoResumoCards"></div>
+    <div class="actions" style="margin-top:10px">
+      <button class="secondary" type="button" onclick="renderGestao()">🔄 Atualizar gestão</button>
+      <button class="secondary" type="button" onclick="novoOrcamento()">➕ Novo orçamento</button>
+    </div>
+  </div>
+<div class="card">
+<h2>👥 Clientes e histórico</h2>
+<button class="secondary db-toggle" type="button" onclick="toggleHistorico()">👥 Selecionar cliente / histórico <span id="historicoChevron">▼</span></button>
+<div id="historicoPainel" class="hidden" style="margin-top:10px;">
+<div class="db-toolbar">
+<input id="buscaClienteHistorico" placeholder="Digite nome ou telefone para buscar..." oninput="renderHistorico()">
+<button class="secondary" type="button" onclick="renderHistorico()">🔎 Buscar</button>
+<button class="secondary" type="button" onclick="novoOrcamento()">＋ Novo orçamento</button>
+</div>
+<div id="historico" class="history-list"><p class="muted">Digite um nome ou telefone para pesquisar.</p></div>
+<div class="actions"><button class="secondary" type="button" onclick="exportarBackup()">💾 Backup (arquivo + nuvem)</button><button class="secondary" type="button" onclick="restaurarUltimoBackupNuvem()">☁️ Restaurar último backup da nuvem</button><button class="secondary" type="button" onclick="document.getElementById('backupInput').click()">📥 Restaurar arquivo</button><input id="backupInput" type="file" accept="application/json" class="hidden" onchange="restaurarBackup(event)"></div>
+</div>
+</div>
+
+  <div class="card">
+    <h3 style="margin-top:0">📋 Pedidos em gestão</h3>
+    <div id="gestaoPedidos"><p class="muted">Nenhum pedido confirmado.</p></div>
+  </div>
+</section>
 <section id="catalogoPanel" class="hidden">
 <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:14px">
 <div><h2 style="margin:0">🛍️ Mostruário do catálogo</h2><div style="opacity:.7;font-size:13px">Somente mostruário. Cadastre e edite produtos, valores e fotos na aba <b>Produtos</b>. Aqui você só controla se o produto aparece na exportação.</div></div>
@@ -699,7 +730,9 @@ async function prepararSnapshotNuvem(snapshot){
     compactas.push(clone);
   }
   out.linhas=compactas;
-  out.cloudSchema='GIBIPRINTS_CLOUD_BACKUP_V2';
+  const midia=await sincronizarMidiasBackupNuvem();
+  out.midia={total:midia.total,novas:midia.novas,existentes:midia.existentes,manifest:midia.manifest};
+  out.cloudSchema='GIBIPRINTS_CLOUD_BACKUP_V3';
   return out;
 }
 async function hidratarLinhasDoBackup(linhas){
@@ -840,13 +873,16 @@ async function salvarFreteCatalogoConfig(){
 }
 
 function showTab(tab){
-const op=document.getElementById('orcamentoPanel'),pp=document.getElementById('produtosPanel'),cp=document.getElementById('catalogoPanel');
-const bo=document.getElementById('tabOrcamento'),bp=document.getElementById('tabProdutos'),bc=document.getElementById('tabCatalogo');
-const isP=tab==='produtos',isC=tab==='catalogo';
-if(op)op.classList.toggle('hidden',isP||isC);if(pp)pp.classList.toggle('hidden',!isP);if(cp)cp.classList.toggle('hidden',!isC);
-if(bo)bo.classList.toggle('active',!isP&&!isC);if(bp)bp.classList.toggle('active',isP);if(bc)bc.classList.toggle('active',isC);
-if(isP){renderProdutoAdmin();renderDadosPagamento();}if(isC){const grid=document.getElementById('catalogAdminGrid');if(grid&&!grid.innerHTML.trim())grid.innerHTML='<div class="muted" style="padding:20px;text-align:center">⏳ Abrindo catálogo...</div>';carregarFreteCatalogoConfig();initCatalogStorage().then(async()=>{renderCatalogPdfConfig();await renderCatalogAdmin();}).catch(e=>{console.warn('Catálogo:',e);if(grid)grid.innerHTML='<div class="muted" style="padding:20px">Não foi possível abrir o catálogo. Recarregue a página.</div>';});}
+const op=document.getElementById('orcamentoPanel'),pp=document.getElementById('produtosPanel'),cp=document.getElementById('catalogoPanel'),gp=document.getElementById('gestaoPanel');
+const bo=document.getElementById('tabOrcamento'),bp=document.getElementById('tabProdutos'),bc=document.getElementById('tabCatalogo'),bg=document.getElementById('tabGestao');
+const isP=tab==='produtos',isC=tab==='catalogo',isG=tab==='gestao';
+if(op)op.classList.toggle('hidden',isP||isC||isG);if(pp)pp.classList.toggle('hidden',!isP);if(cp)cp.classList.toggle('hidden',!isC);if(gp)gp.classList.toggle('hidden',!isG);
+if(bo)bo.classList.toggle('active',!isP&&!isC&&!isG);if(bp)bp.classList.toggle('active',isP);if(bc)bc.classList.toggle('active',isC);if(bg)bg.classList.toggle('active',isG);
+if(isP){renderProdutoAdmin();renderDadosPagamento();}
+if(isC){const grid=document.getElementById('catalogAdminGrid');if(grid&&!grid.innerHTML.trim())grid.innerHTML='<div class="muted" style="padding:20px;text-align:center">⏳ Abrindo catálogo...</div>';carregarFreteCatalogoConfig();initCatalogStorage().then(async()=>{renderCatalogPdfConfig();await renderCatalogAdmin();}).catch(e=>{console.warn('Catálogo:',e);if(grid)grid.innerHTML='<div class="muted" style="padding:20px">Não foi possível abrir o catálogo. Recarregue a página.</div>';});}
+if(isG)renderGestao();
 }
+
 let productAdminPhotos=[];
 function renderProdutoAdminFotos(){const el=document.getElementById('produtoAdminFotos');if(!el)return;el.innerHTML=productAdminPhotos.length?productAdminPhotos.map((x,i)=>`<div class="catalog-photo"><img src="${escAttr(x.src)}" alt="Foto ${i+1}"><span class="photo-order">${i===0?'⭐ 1ª FOTO':'FOTO '+(i+1)}</span><div class="photo-move"><button type="button" ${i===0?'disabled':''} onclick="moverFotoProdutoAdmin(${i},-1)" title="Mover para esquerda">←</button><button type="button" ${i===productAdminPhotos.length-1?'disabled':''} onclick="moverFotoProdutoAdmin(${i},1)" title="Mover para direita">→</button></div><button type="button" class="secondary" style="position:absolute;right:5px;top:5px;padding:5px 8px;min-width:0" onclick="removerFotoProdutoAdmin(${i})">✕</button></div>`).join(''):'<div class="muted" style="grid-column:1/-1;padding:10px">Nenhuma foto cadastrada.</div>'; }
 async function carregarFotosProdutoAdmin(nome){productAdminPhotos=[];try{await initCatalogStorage();const d=await hydrateCatalogPhotos(getCatalogData());const p=(d.produtos||[]).find(x=>String(x.nome||'')===String(nome||''));productAdminPhotos=(p?.fotos||[]).filter(Boolean).slice(0,30).map((src,i)=>({id:p?.fotoIds?.[i]||crypto.randomUUID(),src}));}catch(e){console.warn('Fotos do produto:',e);}renderProdutoAdminFotos();}
@@ -1088,16 +1124,69 @@ async function dbDelete(store,id){const arr=await localDbGetAll(store);const obj
 function clienteDados(){return {nome:document.getElementById('cliente').value.trim(),telefone:document.getElementById('clienteWhats').value.trim(),telefoneNorm:normalizePhone(document.getElementById('clienteWhats').value),rua:document.getElementById('clienteRua').value.trim(),numero:document.getElementById('clienteNumero').value.trim(),complemento:document.getElementById('clienteComplemento').value.trim(),bairro:document.getElementById('clienteBairro').value.trim(),cidade:document.getElementById('clienteCidade').value.trim(),uf:document.getElementById('clienteUF').value.trim().toUpperCase(),cep:document.getElementById('clienteCEP').value.trim()};}
 function enderecoCompletoCliente(c=clienteDados()){return [c.rua,c.numero,c.complemento,c.bairro,c.cidade,c.uf,c.cep].filter(Boolean).join(', ');}
 async function salvarCliente(c){const all=await dbGetAll('clientes');let found=null;if(c.telefoneNorm)found=all.find(x=>x.telefoneNorm===c.telefoneNorm);if(!found&&c.nome)found=all.find(x=>x.nomeNorm===normalizeText(c.nome));const obj={...(found||{}),...c,nomeNorm:normalizeText(c.nome),atualizadoEm:new Date().toISOString()};const id=await dbPut('clientes',obj);obj.id=id;return obj;}
-async function salvarPedidoAutomatico(num,x){const c=clienteDados();const cliente=await salvarCliente(c);const now=new Date();const pagamento=document.getElementById('pagamento').value;const condicaoPagamento=document.getElementById('condicaoPagamento').value;const parcelasCredito=document.getElementById('parcelasCredito')?.value||'1';const freteModo=document.getElementById('freteModo').value;const assinatura=JSON.stringify({cliente:c,items,pagamento,condicaoPagamento,parcelasCredito,pagamentoDetalhes:x.pagamento,frete:x.frete,freteModo,freteManual:document.getElementById('freteManual').value||'',freteKm:document.getElementById('freteKm').value,freteEndereco:document.getElementById('freteEndereco').value||'',freteOrigem:document.getElementById('freteOrigem').value||'',obs:document.getElementById('obs').value.trim()});const pedido={numero:num,data:now.toISOString(),clienteId:cliente.id,cliente:JSON.parse(JSON.stringify(c)),clienteNome:c.nome||'Não informado',clienteTelefone:c.telefone,clienteTelefoneNorm:c.telefoneNorm,endereco:enderecoCompletoCliente(c),itens:JSON.parse(JSON.stringify(items)),produtos:x.normal,frete:x.frete,total:x.total,formaPagamento:pagamento,condicaoPagamento,parcelasCredito,pagamentoDetalhes:x.pagamento,freteModo,freteManual:document.getElementById('freteManual').value||'',freteKm:document.getElementById('freteKm').value,freteEndereco:document.getElementById('freteEndereco').value||'',freteOrigem:document.getElementById('freteOrigem').value||'',descontoPercentual:x.pagamento.descontoPct||0,descontoTipo:x.pagamento.descontoTipo||'percentual',descontoValor:x.pagamento.descontoDigitado||0,descontoEspecial:x.pagamento.descontoEspecial||0,descontoPix:x.pagamento.descontoPix||0,status:'Orçamento',pagamentoStatus:'Pendente',pagamentos:[],observacao:document.getElementById('obs').value.trim(),assinatura};await dbPut('pedidos',pedido);if(document.getElementById('historicoPainel')&&!document.getElementById('historicoPainel').classList.contains('hidden'))await renderHistorico();return pedido;}
+let pedidoEmEdicaoId=null;
+let modoEdicaoPedido='novo';
+async function salvarPedidoAutomatico(num,x){
+ const c=clienteDados();const cliente=await salvarCliente(c);const now=new Date();
+ const pagamento=document.getElementById('pagamento').value;const condicaoPagamento=document.getElementById('condicaoPagamento').value;const parcelasCredito=document.getElementById('parcelasCredito')?.value||'1';const freteModo=document.getElementById('freteModo').value;
+ const assinatura=JSON.stringify({cliente:c,items,pagamento,condicaoPagamento,parcelasCredito,pagamentoDetalhes:x.pagamento,frete:x.frete,freteModo,freteManual:document.getElementById('freteManual').value||'',freteKm:document.getElementById('freteKm').value,freteEndereco:document.getElementById('freteEndereco').value||'',freteOrigem:document.getElementById('freteOrigem').value||'',obs:document.getElementById('obs').value.trim()});
+ const existentes=await dbGetAll('pedidos');const antigo=pedidoEmEdicaoId!=null?existentes.find(p=>p.id===pedidoEmEdicaoId):null;
+ const pedido={...(antigo||{}),numero:num,data:antigo?.data||now.toISOString(),clienteId:cliente.id,cliente:JSON.parse(JSON.stringify(c)),clienteNome:c.nome||'Não informado',clienteTelefone:c.telefone,clienteTelefoneNorm:c.telefoneNorm,endereco:enderecoCompletoCliente(c),itens:JSON.parse(JSON.stringify(items)),produtos:x.normal,frete:x.frete,total:x.total,formaPagamento:pagamento,condicaoPagamento,parcelasCredito,pagamentoDetalhes:x.pagamento,freteModo,freteManual:document.getElementById('freteManual').value||'',freteKm:document.getElementById('freteKm').value,freteEndereco:document.getElementById('freteEndereco').value||'',freteOrigem:document.getElementById('freteOrigem').value||'',descontoPercentual:x.pagamento.descontoPct||0,descontoTipo:x.pagamento.descontoTipo||'percentual',descontoValor:x.pagamento.descontoDigitado||0,descontoEspecial:x.pagamento.descontoEspecial||0,descontoPix:x.pagamento.descontoPix||0,status:antigo?.status||'Orçamento',pagamentoStatus:antigo?.pagamentoStatus||'Pendente',pagamentos:Array.isArray(antigo?.pagamentos)?antigo.pagamentos:[],observacao:document.getElementById('obs').value.trim(),assinatura,atualizadoEm:now.toISOString()};
+ await dbPut('pedidos',pedido);pedidoEmEdicaoId=null;modoEdicaoPedido='novo';
+ if(document.getElementById('historicoPainel')&&!document.getElementById('historicoPainel').classList.contains('hidden'))await renderHistorico();
+ if(document.getElementById('gestaoPanel')&&!document.getElementById('gestaoPanel').classList.contains('hidden'))renderGestao();
+ return pedido;
+}
 function toggleHistorico(force){const panel=document.getElementById('historicoPainel');if(!panel)return;const open=typeof force==='boolean'?force:panel.classList.contains('hidden');panel.classList.toggle('hidden',!open);document.getElementById('historicoChevron').textContent=open?'▲':'▼';if(open){const q=document.getElementById('buscaClienteHistorico');q?.focus();renderHistorico();}}
-async function renderHistorico(){const el=document.getElementById('historico');if(!el)return;const panel=document.getElementById('historicoPainel');if(panel?.classList.contains('hidden'))return;const q=normalizeText(document.getElementById('buscaClienteHistorico')?.value);let arr=await dbGetAll('pedidos');arr.sort((a,b)=>String(b.data).localeCompare(String(a.data)));if(!q){el.innerHTML='<p class="muted">Digite um nome ou telefone para pesquisar. A lista completa fica oculta para manter a tela limpa.</p>';return;}arr=arr.filter(p=>normalizeText(p.clienteNome).includes(q)||normalizePhone(p.clienteTelefone).includes(normalizePhone(q)));if(!arr.length){el.innerHTML='<p class="muted">Nenhum cliente ou pedido encontrado.</p>';return;}el.innerHTML=arr.slice(0,100).map(p=>{const d=new Date(p.data);const confirmado=p.status==='Pedido confirmado'||p.status==='Pedido pago';const recebido=round2((p.pagamentos||[]).reduce((a,z)=>a+Number(z.valor||0),0));const pago=recebido>=round2(p.total);return `<div class="history-row"><div class="history-row-top"><div><b>#${esc(p.numero)} — ${esc(p.clienteNome)}</b><div class="muted">${d.toLocaleDateString('pt-BR')} • ${esc(p.clienteTelefone||'Sem telefone')} • ${esc(p.status||'Orçamento')}</div><div class="muted">Pagamento registrado: ${money(recebido)}${recebido?` • Saldo: ${money(Math.max(0,p.total-recebido))}`:''}</div></div><b>${money(p.total)}</b></div><div class="history-actions"><button onclick="carregarPedido(${p.id})">👁️ Abrir</button><button onclick="duplicarPedido(${p.id})">♻️ Duplicar</button>${!confirmado?`<button onclick="confirmarPedido(${p.id})">✅ Confirmar pedido</button>`:''}<button onclick="registrarPagamento(${p.id})">💰 ${pago?'Ver/registrar pagamento':'Registrar pagamento'}</button><button class="danger-fill" onclick="excluirPedido(${p.id})">🗑️ Excluir</button></div></div>`}).join('');}
+async function renderHistorico(){const el=document.getElementById('historico');if(!el)return;const panel=document.getElementById('historicoPainel');if(panel?.classList.contains('hidden'))return;const q=normalizeText(document.getElementById('buscaClienteHistorico')?.value);let arr=(await dbGetAll('pedidos')).filter(p=>p.status!=='Pedido confirmado'&&p.status!=='Pedido pago');arr.sort((a,b)=>String(b.data).localeCompare(String(a.data)));if(!q){el.innerHTML='<p class="muted">Digite um nome ou telefone para pesquisar. A lista completa fica oculta para manter a tela limpa.</p>';return;}arr=arr.filter(p=>normalizeText(p.clienteNome).includes(q)||normalizePhone(p.clienteTelefone).includes(normalizePhone(q)));if(!arr.length){el.innerHTML='<p class="muted">Nenhum cliente ou pedido encontrado.</p>';return;}el.innerHTML=arr.slice(0,100).map(p=>{const d=new Date(p.data);const confirmado=p.status==='Pedido confirmado'||p.status==='Pedido pago';const recebido=round2((p.pagamentos||[]).reduce((a,z)=>a+Number(z.valor||0),0));const pago=recebido>=round2(p.total);return `<div class="history-row"><div class="history-row-top"><div><b>#${esc(p.numero)} — ${esc(p.clienteNome)}</b><div class="muted">${d.toLocaleDateString('pt-BR')} • ${esc(p.clienteTelefone||'Sem telefone')} • ${esc(p.status||'Orçamento')}</div><div class="muted">Pagamento registrado: ${money(recebido)}${recebido?` • Saldo: ${money(Math.max(0,p.total-recebido))}`:''}</div></div><b>${money(p.total)}</b></div><div class="history-actions"><button onclick="carregarPedido(${p.id})">👁️ Abrir</button><button onclick="duplicarPedido(${p.id})">♻️ Duplicar</button>${!confirmado?`<button onclick="confirmarPedido(${p.id})">✅ Confirmar pedido</button>`:''}<button onclick="registrarPagamento(${p.id})">💰 ${pago?'Ver/registrar pagamento':'Registrar pagamento'}</button><button class="danger-fill" onclick="excluirPedido(${p.id})">🗑️ Excluir</button></div></div>`}).join('');}
 function preencherCampo(id,value){const el=document.getElementById(id);if(el)el.value=value??'';}
-async function carregarPedido(id){const arr=await dbGetAll('pedidos');const p=arr.find(x=>x.id===id);if(!p)return;items=JSON.parse(JSON.stringify(p.itens||[]));const c=p.cliente||{};const parts=(p.endereco||'').split(',').map(x=>x.trim());preencherCampo('cliente',c.nome||p.clienteNome||'');preencherCampo('clienteWhats',c.telefone||p.clienteTelefone||'');preencherCampo('clienteRua',c.rua||parts[0]||'');preencherCampo('clienteNumero',c.numero||parts[1]||'');preencherCampo('clienteComplemento',c.complemento||'');preencherCampo('clienteBairro',c.bairro||'');preencherCampo('clienteCidade',c.cidade||'Rio de Janeiro');preencherCampo('clienteUF',c.uf||'RJ');preencherCampo('clienteCEP',c.cep||'');preencherCampo('obs',p.observacao||'');preencherCampo('descontoPedido',p.descontoPercentual||0);preencherCampo('pagamento',p.formaPagamento||'pix');preencherCampo('condicaoPagamento',p.condicaoPagamento||((p.formaPagamento==='avista')?'integral':'50_50'));preencherCampo('parcelasCredito',p.parcelasCredito||p.pagamentoDetalhes?.parcelas||'2');onPagamentoChange();preencherCampo('freteModo',p.freteModo||p.frete?.modo||'sem');const manualValor=(p.freteManual!==undefined&&p.freteManual!==null&&p.freteManual!=='')?p.freteManual:(p.frete?.modo==='manual'?p.frete?.valor:'');preencherCampo('freteManual',manualValor||'');preencherCampo('freteKm',p.freteKm||((p.frete?.valorKm||1).toFixed(2).replace('.',',')));preencherCampo('freteEndereco',p.freteEndereco||p.endereco||enderecoCompletoCliente(c));preencherCampo('freteOrigem',p.freteOrigem||'Benfica, Rio de Janeiro - RJ, Brasil');const f=p.frete||{};freteRota={kmReal:Number(f.kmReal||0),kmCobrado:Number(f.km||f.kmCobrado||0),valorKm:Number(f.valorKm||1),valor:Number(f.valor||0),origem:p.freteOrigem||f.origem||'',destino:p.freteEndereco||f.destino||'',ok:(p.freteModo||f.modo)==='rota'&&Number(f.valor||0)>0};onFreteModo();if(freteRota.ok){const out=document.getElementById('freteResultado');out.classList.remove('hidden');out.innerHTML=`<div style="padding:10px 12px;border:1px solid #c8dfc4;background:#f3faef;border-radius:10px"><b>Rota:</b> ${(freteRota.kmReal||0).toFixed(2).replace('.',',')} km → <b>${freteRota.kmCobrado} km cobrados</b> × ${money(freteRota.valorKm)} = <b>${money(freteRota.valor)}</b></div>`;}renderItems();renderResumo();window.scrollTo({top:0,behavior:'smooth'});}
-async function duplicarPedido(id){await carregarPedido(id);alert('Duplicação carregada: todas as informações do pedido foram preenchidas. Você pode editar o cliente, produtos, frete ou pagamento e gerar um novo comprovante. O pedido original permanece intacto.');}
-async function confirmarPedido(id){const arr=await dbGetAll('pedidos');const p=arr.find(x=>x.id===id);if(!p)return;if(p.status==='Pedido confirmado'||p.status==='Pedido pago')return;if(!confirm(`Confirmar o pedido #${p.numero} de ${p.clienteNome}?\n\nIsso altera somente o status interno do histórico. Nenhum pagamento será registrado.`))return;p.status='Pedido confirmado';p.confirmadoEm=new Date().toISOString();await dbPut('pedidos',p);await renderHistorico();alert(`Pedido #${p.numero} confirmado.\n\nNenhum pagamento foi registrado.`);}
+async function carregarPedido(id){showTab('orcamento');const arr=await dbGetAll('pedidos');const p=arr.find(x=>x.id===id);if(!p)return;pedidoEmEdicaoId=id;modoEdicaoPedido='editar';items=JSON.parse(JSON.stringify(p.itens||[]));const c=p.cliente||{};const parts=(p.endereco||'').split(',').map(x=>x.trim());preencherCampo('cliente',c.nome||p.clienteNome||'');preencherCampo('clienteWhats',c.telefone||p.clienteTelefone||'');preencherCampo('clienteRua',c.rua||parts[0]||'');preencherCampo('clienteNumero',c.numero||parts[1]||'');preencherCampo('clienteComplemento',c.complemento||'');preencherCampo('clienteBairro',c.bairro||'');preencherCampo('clienteCidade',c.cidade||'Rio de Janeiro');preencherCampo('clienteUF',c.uf||'RJ');preencherCampo('clienteCEP',c.cep||'');preencherCampo('obs',p.observacao||'');preencherCampo('descontoPedido',p.descontoPercentual||0);preencherCampo('pagamento',p.formaPagamento||'pix');preencherCampo('condicaoPagamento',p.condicaoPagamento||((p.formaPagamento==='avista')?'integral':'50_50'));preencherCampo('parcelasCredito',p.parcelasCredito||p.pagamentoDetalhes?.parcelas||'2');onPagamentoChange();preencherCampo('freteModo',p.freteModo||p.frete?.modo||'sem');const manualValor=(p.freteManual!==undefined&&p.freteManual!==null&&p.freteManual!=='')?p.freteManual:(p.frete?.modo==='manual'?p.frete?.valor:'');preencherCampo('freteManual',manualValor||'');preencherCampo('freteKm',p.freteKm||((p.frete?.valorKm||1).toFixed(2).replace('.',',')));preencherCampo('freteEndereco',p.freteEndereco||p.endereco||enderecoCompletoCliente(c));preencherCampo('freteOrigem',p.freteOrigem||'Benfica, Rio de Janeiro - RJ, Brasil');const f=p.frete||{};freteRota={kmReal:Number(f.kmReal||0),kmCobrado:Number(f.km||f.kmCobrado||0),valorKm:Number(f.valorKm||1),valor:Number(f.valor||0),origem:p.freteOrigem||f.origem||'',destino:p.freteEndereco||f.destino||'',ok:(p.freteModo||f.modo)==='rota'&&Number(f.valor||0)>0};onFreteModo();if(freteRota.ok){const out=document.getElementById('freteResultado');out.classList.remove('hidden');out.innerHTML=`<div style="padding:10px 12px;border:1px solid #c8dfc4;background:#f3faef;border-radius:10px"><b>Rota:</b> ${(freteRota.kmReal||0).toFixed(2).replace('.',',')} km → <b>${freteRota.kmCobrado} km cobrados</b> × ${money(freteRota.valorKm)} = <b>${money(freteRota.valor)}</b></div>`;}renderItems();renderResumo();window.scrollTo({top:0,behavior:'smooth'});}
+async function duplicarPedido(id){await carregarPedido(id);pedidoEmEdicaoId=null;modoEdicaoPedido='novo';alert('Duplicação carregada: todas as informações do pedido foram preenchidas. Você pode editar o cliente, produtos, frete ou pagamento e gerar um novo comprovante. O pedido original permanece intacto.');}
+async function confirmarPedido(id){const arr=await dbGetAll('pedidos');const p=arr.find(x=>x.id===id);if(!p)return;if(p.status==='Pedido confirmado'||p.status==='Pedido pago')return;if(!confirm(`Confirmar o pedido #${p.numero} de ${p.clienteNome}?\n\nIsso altera somente o status interno do histórico. Nenhum pagamento será registrado.`))return;p.status='Pedido confirmado';p.confirmadoEm=new Date().toISOString();await dbPut('pedidos',p);await renderHistorico();renderGestao();alert(`Pedido #${p.numero} confirmado.\n\nNenhum pagamento foi registrado.`);}
 async function registrarPagamento(id){const arr=await dbGetAll('pedidos');const p=arr.find(x=>x.id===id);if(!p)return;const recebido=round2((p.pagamentos||[]).reduce((a,z)=>a+Number(z.valor||0),0));const saldo=round2(Math.max(0,p.total-recebido));if(saldo<=0){alert(`Pedido #${p.numero} já está totalmente pago.\nTotal recebido: ${money(recebido)}`);return;}const valorTxt=prompt(`Pedido #${p.numero}\nTotal: ${money(p.total)}\nJá recebido: ${money(recebido)}\nSaldo: ${money(saldo)}\n\nDigite o valor recebido agora:`);if(valorTxt===null)return;const valor=round2(Number(String(valorTxt).trim().replace(/[^0-9,.-]/g,'').replace(/\./g,'').replace(',','.')));if(!valor||valor<=0){alert('Informe um valor de pagamento válido.');return;}if(valor>saldo+0.01){alert(`O valor informado (${money(valor)}) é maior que o saldo (${money(saldo)}).`);return;}const forma=prompt('Forma de pagamento (Pix, Dinheiro, Débito, Crédito à vista ou Crédito parcelado):','Pix')||'Pix';p.pagamentos=Array.isArray(p.pagamentos)?p.pagamentos:[];p.pagamentos.push({valor,forma,data:new Date().toISOString()});const totalRecebido=round2(p.pagamentos.reduce((a,z)=>a+Number(z.valor||0),0));p.pagamentoStatus=totalRecebido>=round2(p.total)?'Pago':'Parcial';if(p.pagamentoStatus==='Pago')p.status='Pedido pago';else if(p.status==='Orçamento')p.status='Pedido confirmado';await dbPut('pedidos',p);await renderHistorico();alert(`Pagamento registrado: ${money(valor)}\nForma: ${forma}\nTotal recebido: ${money(totalRecebido)}\nSaldo restante: ${money(Math.max(0,p.total-totalRecebido))}`);}
 async function excluirPedido(id){if(!confirm('Deseja realmente excluir este orçamento?'))return;await dbDelete('pedidos',id);await renderHistorico();}
-function novoOrcamento(){showTab('orcamento');items=[];document.getElementById('cliente').value='';document.getElementById('clienteWhats').value='';document.getElementById('clienteRua').value='';document.getElementById('clienteNumero').value='';document.getElementById('clienteComplemento').value='';document.getElementById('clienteBairro').value='';document.getElementById('clienteCidade').value='Rio de Janeiro';document.getElementById('clienteUF').value='RJ';document.getElementById('clienteCEP').value='';document.getElementById('obs').value='';addItem();window.scrollTo({top:0,behavior:'smooth'});}
+function novoOrcamento(){showTab('orcamento');pedidoEmEdicaoId=null;modoEdicaoPedido='novo';items=[];document.getElementById('cliente').value='';document.getElementById('clienteWhats').value='';document.getElementById('clienteRua').value='';document.getElementById('clienteNumero').value='';document.getElementById('clienteComplemento').value='';document.getElementById('clienteBairro').value='';document.getElementById('clienteCidade').value='Rio de Janeiro';document.getElementById('clienteUF').value='RJ';document.getElementById('clienteCEP').value='';document.getElementById('obs').value='';addItem();window.scrollTo({top:0,behavior:'smooth'});}
+async function coletarMidiasLocaisBackup(){
+ const itens=[]; const seen=new Set();
+ const add=async(src,origem)=>{if(!src||typeof src!=='string'||!src.startsWith('data:image/'))return;const blob=dataUrlToBlob(src);if(!blob)return;const hash=await sha256Hex(blob);if(seen.has(hash))return;seen.add(hash);itens.push({hash,origem,mime_type:blob.type||'image/jpeg',tamanho_bytes:blob.size,blob});};
+ try{for(const rec of await catalogGetAllPhotos())await add(rec?.data,'catalogo');}catch(e){console.warn('Inventário fotos catálogo:',e);}
+ try{for(const l of await linhaAll())for(const m of (l.modelos||[]))for(const f of (m.fotos||[]))await add(f,`linha:${l.id}:${m.id}`);}catch(e){console.warn('Inventário fotos linhas:',e);}
+ try{const cfg=getDadosPagamento();await add(cfg.qrCode,'qr_code');}catch(e){}
+ return itens;
+}
+async function sincronizarMidiasBackupNuvem(){
+ const itens=await coletarMidiasLocaisBackup(); if(!sbSession)return {total:itens.length,novas:0,existentes:itens.length,manifest:itens.map(x=>({hash:x.hash,origem:x.origem,mime_type:x.mime_type,tamanho_bytes:x.tamanho_bytes}))};
+ const manifest=[]; let novas=0,existentes=0;
+ for(const item of itens){const ext=extFromMime(item.mime_type);const path=`backup-midia/${item.hash}.${ext}`;const up=await sbClient.storage.from(CATALOG_SUPABASE_BUCKET).upload(path,item.blob,{contentType:item.mime_type,upsert:false,cacheControl:'31536000'});if(up.error&&!/already exists/i.test(up.error.message||''))throw new Error(`Mídia ${item.origem}: ${up.error.message||'falha no upload'}`);if(up.error)existentes++;else novas++;const pub=sbClient.storage.from(CATALOG_SUPABASE_BUCKET).getPublicUrl(path).data.publicUrl;manifest.push({hash:item.hash,origem:item.origem,mime_type:item.mime_type,tamanho_bytes:item.tamanho_bytes,storage_path:path,public_url:pub});}
+ return {total:itens.length,novas,existentes,manifest};
+}
+
+async function editarCustoGestao(id){
+ const arr=await dbGetAll('pedidos'); const p=arr.find(x=>x.id===id); if(!p)return;
+ const atual=round2(p.custoProducao||0);
+ const txt=prompt(`Pedido #${p.numero}\nVenda: ${money(p.total)}\n\nInforme o custo total de produção deste pedido:`,atual?String(atual.toFixed(2)).replace('.',','):'0,00');
+ if(txt===null)return;
+ const valor=round2(Number(String(txt).replace(/[^0-9,.-]/g,'').replace(/\./g,'').replace(',','.')));
+ if(valor<0){alert('O custo não pode ser negativo.');return;}
+ p.custoProducao=valor; p.lucro=round2(Number(p.total||0)-valor); p.atualizadoGestaoEm=new Date().toISOString();
+ await dbPut('pedidos',p); if(sbSession){try{await cloudUpsert('pedidos',p);}catch(e){console.warn('Sincronização do custo:',e);}}
+ renderGestao();
+}
+async function renderGestao(){
+ const cards=document.getElementById('gestaoResumoCards'),list=document.getElementById('gestaoPedidos'); if(!cards||!list)return;
+ try{
+  const arr=(await dbGetAll('pedidos')).filter(p=>p && (p.status==='Pedido confirmado'||p.status==='Pedido pago'));
+  const totalVendas=round2(arr.reduce((a,p)=>a+Number(p.total||0),0));
+  const recebido=round2(arr.reduce((a,p)=>a+(p.pagamentos||[]).reduce((x,z)=>x+Number(z.valor||0),0),0));
+  const custos=round2(arr.reduce((a,p)=>a+Number(p.custoProducao||0),0));
+  const lucro=round2(totalVendas-custos);
+  cards.innerHTML=[['Pedidos',arr.length],['Vendas',money(totalVendas)],['Recebido',money(recebido)],['A receber',money(Math.max(0,totalVendas-recebido))],['Custos',money(custos)],['Lucro',money(lucro)]].map(([a,b])=>`<div class="card" style="margin:0;background:#f8fbf7"><div class="muted" style="font-size:12px;font-weight:800">${a}</div><strong style="font-size:20px;color:#0b6b35">${b}</strong></div>`).join('');
+  if(!arr.length){list.innerHTML='<p class="muted">Nenhum pedido confirmado ainda. Confirme um orçamento para ele aparecer aqui.</p>';return;}
+  arr.sort((a,b)=>String(b.confirmadoEm||b.data).localeCompare(String(a.confirmadoEm||a.data)));
+  list.innerHTML=arr.map(p=>{const rec=round2((p.pagamentos||[]).reduce((a,z)=>a+Number(z.valor||0),0));const custo=round2(p.custoProducao||0);const l=round2(Number(p.total||0)-custo);const saldo=Math.max(0,round2(Number(p.total||0)-rec));return `<div class="history-row"><div class="history-row-top"><div><b>#${esc(p.numero)} — ${esc(p.clienteNome||'Não informado')}</b><div class="muted">${esc(p.status||'Pedido confirmado')} • ${new Date(p.confirmadoEm||p.data).toLocaleDateString('pt-BR')}</div></div><b>${money(p.total)}</b></div><div class="muted" style="margin-top:6px">Recebido: <b>${money(rec)}</b> • Saldo: <b>${money(saldo)}</b> • Custo: <b>${money(custo)}</b> • Lucro: <b>${money(l)}</b></div><div class="history-actions"><button onclick="carregarPedido(${p.id})">👁️ Abrir</button><button onclick="editarCustoGestao(${p.id})">🏭 Informar custo</button><button onclick="registrarPagamento(${p.id});setTimeout(renderGestao,300)">💰 Pagamento</button><button onclick="duplicarPedido(${p.id})">♻️ Duplicar</button></div></div>`}).join('');
+ }catch(e){console.warn('Gestão:',e);list.innerHTML='<p class="muted">Não foi possível carregar a gestão.</p>';}
+}
+
 async function montarSnapshotBackup(){
  const clientes=await localDbGetAll('clientes');
  const pedidos=(await localDbGetAll('pedidos')).filter(p=>p?.sync_id!==CLOUD_BACKUP_SYNC_ID);
@@ -1105,7 +1194,8 @@ async function montarSnapshotBackup(){
  const meta=JSON.parse(JSON.stringify(PRODUCT_META||{}));
  let linhas=[];
  try{linhas=await linhaAll();}catch(e){console.warn('Backup das linhas:',e);}
- return {versao:3,tipo:'GIBIPRINTS_CLOUD_BACKUP',backupId:CLOUD_BACKUP_SYNC_ID,exportadoEm:new Date().toISOString(),clientes,pedidos,produtos,productMeta:meta,linhas};
+ const midiaLocal=await coletarMidiasLocaisBackup();
+ return {versao:4,tipo:'GIBIPRINTS_CLOUD_BACKUP',backupId:CLOUD_BACKUP_SYNC_ID,exportadoEm:new Date().toISOString(),clientes,pedidos,produtos,productMeta:meta,linhas,midia:{total:midiaLocal.length,manifest:midiaLocal.map(x=>({hash:x.hash,origem:x.origem,mime_type:x.mime_type,tamanho_bytes:x.tamanho_bytes}))}};
 }
 
 async function salvarSnapshotBackupNuvem(snapshot){
@@ -1140,18 +1230,25 @@ async function salvarSnapshotBackupNuvem(snapshot){
 
  const {error:insertError}=await sbClient.from('pedidos').insert(row);
  if(insertError)throw new Error(`Supabase pedidos: ${insertError.message||insertError.code||'erro ao criar backup'}`);
+ return compacto;
 }
 
 async function exportarBackup(){
  try{
   const snapshot=await montarSnapshotBackup();
-  if(sbSession)await salvarSnapshotBackupNuvem(snapshot);
+  let cloudSnapshot=null;
+  if(sbSession)cloudSnapshot=await salvarSnapshotBackupNuvem(snapshot);
   const blob=new Blob([JSON.stringify(snapshot,null,2)],{type:'application/json'});
   const a=document.createElement('a');a.download='GIBIPRINTS_BACKUP_'+new Date().toISOString().slice(0,10)+'.json';a.href=URL.createObjectURL(blob);a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000);
-  alert(sbSession?'Backup concluído: arquivo salvo e último backup gravado na nuvem.':'Backup em arquivo concluído. Faça login na nuvem para gravar também na nuvem.');
+  const midiaQtd=Number((cloudSnapshot||snapshot)?.midia?.total||0); const midiaNovas=Number(cloudSnapshot?.midia?.novas||0); const midiaExistentes=Number(cloudSnapshot?.midia?.existentes||0); alert(sbSession?`Backup concluído: arquivo salvo e último backup gravado na nuvem.\n\nMídias encontradas: ${midiaQtd}\nNovas enviadas: ${midiaNovas}\nJá existentes: ${midiaExistentes}`:`Backup em arquivo concluído.\n\nMídias encontradas: ${midiaQtd}\nFaça login na nuvem para gravar também na nuvem.`);
  }catch(e){console.error('Backup:',e);alert('Não foi possível concluir o backup.\n\n'+(e?.message||e));}
 }
 
+async function restaurarMidiaEspecialBackup(midia){
+ const ref=(midia?.manifest||[]).find(x=>x?.origem==='qr_code'&&x?.public_url);
+ if(!ref)return;
+ try{const r=await fetch(ref.public_url,{cache:'no-store'});if(!r.ok)throw new Error('HTTP '+r.status);const data=await blobToDataUrl(await r.blob());const cfg=getDadosPagamento();cfg.qrCode=data;salvarDadosPagamentoLocal(cfg);renderDadosPagamento();}catch(e){console.warn('Restauração do QR Code:',e);}
+}
 async function restaurarUltimoBackupNuvem(){
  if(!sbSession){alert('Faça login na nuvem antes de restaurar.');return;}
  if(!confirm('Restaurar o ÚLTIMO backup salvo na nuvem?\n\nIsso substituirá os clientes, pedidos, produtos e linhas deste aparelho pelo conteúdo do último backup.'))return;
@@ -1170,6 +1267,7 @@ async function restaurarUltimoBackupNuvem(){
   for(const c of clientes)await localDbPut('clientes',c);
   for(const p of pedidos)await localDbPut('pedidos',p);
   await substituirLinhasLocais(linhas);
+  await restaurarMidiaEspecialBackup(snapshot.midia);
   PRODUCTS={...(snapshot.produtos||{})};
   PRODUCT_META={...(snapshot.productMeta||{})};
   persistProductsLocal();
@@ -1191,6 +1289,7 @@ async function restaurarBackup(ev){
   for(const p of (data.pedidos||[]))await localDbPut('pedidos',p);
   if(data.produtos){PRODUCTS={...(data.produtos||{})};PRODUCT_META={...(data.productMeta||{})};persistProductsLocal();}
   if(Array.isArray(data.linhas))await substituirLinhasLocais(data.linhas);
+  await restaurarMidiaEspecialBackup(data.midia);
   cloudStoresSynced.add('clientes');cloudStoresSynced.add('pedidos');cloudStoresSynced.add('produtos');
   await renderHistorico();renderItems();renderProdutoAdmin();renderResumo();renderLinhasAdmin();
   alert(`Backup restaurado com sucesso.\n\nClientes: ${(data.clientes||[]).length}\nPedidos: ${(data.pedidos||[]).length}\nProdutos: ${Object.keys(data.produtos||PRODUCTS||{}).length}\nLinhas: ${(data.linhas||[]).length}`);
@@ -1498,7 +1597,14 @@ async function buildQuote(){
  const paymentCfg=getDadosPagamento();
  let quoteImageMap={};try{await initCatalogStorage();const qd=await hydrateCatalogPhotos(getCatalogData());for(const p of qd.produtos||[]){const f=(p.fotos||[]).find(Boolean);if(f)quoteImageMap[p.nome]=f;}}catch(e){}
  const now=new Date(), data=now.toLocaleDateString('pt-BR'), hora=now.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});
- const num=orderNumber();
+ let num=orderNumber();
+ if(pedidoEmEdicaoId!=null){
+   const arrEd=await dbGetAll('pedidos');const pedEd=arrEd.find(p=>p.id===pedidoEmEdicaoId);
+   if(pedEd){
+     const escolha=confirm(`Você está editando o pedido #${pedEd.numero}.\n\nOK = atualizar o mesmo pedido #${pedEd.numero}.\nCancelar = gerar um novo pedido.`);
+     if(escolha){num=pedEd.numero;modoEdicaoPedido='atualizar';}else{pedidoEmEdicaoId=null;modoEdicaoPedido='novo';num=orderNumber();}
+   }else{pedidoEmEdicaoId=null;modoEdicaoPedido='novo';}
+ }
  const rows=x.rows.map((r,i)=>`
  <div style="display:grid;grid-template-columns:82px 1.35fr .7fr 1.35fr 1.55fr .65fr .8fr .95fr;align-items:center;border:1px solid #d9dfd8;border-radius:14px;margin:8px 8px 0;padding:9px 8px;min-height:128px;background:#fff;font-size:14px;">
    <div style="display:flex;justify-content:center">${quoteImageMap[r.it.product]?`<img src="${esc(quoteImageMap[r.it.product])}" style="width:76px;height:76px;object-fit:cover;border-radius:10px;border:1px solid #d5dfd3">`:productIcon(r.it.product)}</div>

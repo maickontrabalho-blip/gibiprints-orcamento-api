@@ -1,5 +1,21 @@
-GIBIPRINTS — V14
+# GIBIPRINTS V16 — Gestão + Clientes/Histórico
 
-Correção do backup completo na nuvem: o snapshot não depende mais de ON CONFLICT em sync_id, permitindo salvar/restaurar mesmo quando pedidos.sync_id não possui constraint UNIQUE.
+Versão de teste com:
+- quatro abas em uma única linha: Orçamento, Produtos, Catálogo e Gestão;
+- Gestão básica de pedidos confirmados, recebimentos, custos e lucro;
+- confirmação de pedido move o pedido para Gestão;
+- edição de pedido existente preserva o mesmo número quando escolhido; duplicação cria novo pedido;
+- correção visual para as setas não sobreporem o cabeçalho;
+- botões das Linhas em grade compacta de 2 colunas;
+- backup completo com linhas/mostruários e inventário de mídias;
+- sincronização das mídias locais para o Storage, incluindo QR Code;
+- restauração do QR Code a partir do backup;
+- catálogo continua fora da exportação PDF/JPG.
 
-Também inclui a paleta de 21 cores do fornecedor, incluindo Marrom.
+Esta versão usa a estrutura Supabase já existente do projeto.
+
+
+## V16
+- Clientes e histórico movidos para a área Gestão.
+- Botão Abrir da Gestão leva automaticamente ao pedido específico na área Orçamento para edição.
+- A abertura não cria novo pedido; a lógica existente de atualização/novo permanece no momento de gerar/salvar o orçamento.
