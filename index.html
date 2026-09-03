@@ -691,26 +691,33 @@ async function sincronizarFotosProdutoSupabase(produto, cloudProdutoId, onProgre
 async function blobToDataUrl(blob){
   return await new Promise((resolve,reject)=>{const fr=new FileReader();fr.onload=()=>resolve(fr.result);fr.onerror=reject;fr.readAsDataURL(blob);});
 }
-async function sincronizarFotosLinhaSupabase(linha){
+async function sincronizarFotosLinhaSupabase(linha,onProgress){
   if(!sbSession)throw new Error('Faça login na nuvem antes de sincronizar as linhas.');
   const modelos=Array.isArray(linha?.modelos)?linha.modelos:[];
-  const refs=[];
+  const tarefas=[];
   for(const modelo of modelos){
     const fotos=Array.isArray(modelo?.fotos)?modelo.fotos:[];
-    const fotoRefs=[];
-    for(let i=0;i<fotos.length;i++){
-      const blob=dataUrlToBlob(fotos[i]);
-      if(!blob)continue;
-      const hash=await sha256Hex(blob);
-      const ext=extFromMime(blob.type),path=`linhas/${linha.id}/${modelo.id}/${hash}.${ext}`;
-      const up=await sbClient.storage.from(CATALOG_SUPABASE_BUCKET).upload(path,blob,{contentType:blob.type||'image/jpeg',upsert:true,cacheControl:'31536000'});
-      if(up.error)throw new Error(`Foto da linha ${linha.titulo||''}: ${up.error.message||'falha no upload'}`);
-      const pub=sbClient.storage.from(CATALOG_SUPABASE_BUCKET).getPublicUrl(path).data.publicUrl;
-      fotoRefs.push({storage_path:path,public_url:pub,content_hash:hash,mime_type:blob.type||'image/jpeg',ordem:i});
-    }
-    refs.push({modelId:modelo.id,fotos:fotoRefs});
+    for(let i=0;i<fotos.length;i++)tarefas.push({modelo,i,src:fotos[i]});
   }
-  return refs;
+  const refsByModel=new Map(modelos.map(m=>[m.id,[]]));
+  let concluidas=0;
+  const worker=async(task)=>{
+    const blob=dataUrlToBlob(task.src);
+    if(!blob)return;
+    const hash=await sha256Hex(blob);
+    const ext=extFromMime(blob.type),path=`linhas/${linha.id}/${task.modelo.id}/${hash}.${ext}`;
+    const up=await sbClient.storage.from(CATALOG_SUPABASE_BUCKET).upload(path,blob,{contentType:blob.type||'image/jpeg',upsert:true,cacheControl:'31536000'});
+    if(up.error)throw new Error(`Foto da linha ${linha.titulo||''} / ${task.modelo.tipo||''}: ${up.error.message||'falha no upload'}`);
+    const pub=sbClient.storage.from(CATALOG_SUPABASE_BUCKET).getPublicUrl(path).data.publicUrl;
+    refsByModel.get(task.modelo.id).push({storage_path:path,public_url:pub,content_hash:hash,mime_type:blob.type||'image/jpeg',ordem:task.i});
+    concluidas++;
+    onProgress?.(concluidas,tarefas.length);
+  };
+  let cursor=0;
+  async function runner(){while(true){const i=cursor++;if(i>=tarefas.length)return;await worker(tarefas[i]);}}
+  const workers=Array.from({length:Math.min(4,Math.max(1,tarefas.length))},()=>runner());
+  await Promise.all(workers);
+  return modelos.map(m=>({modelId:m.id,fotos:(refsByModel.get(m.id)||[]).sort((a,b)=>Number(a.ordem)-Number(b.ordem))}));
 }
 async function prepararSnapshotNuvem(snapshot){
   const out=JSON.parse(JSON.stringify(snapshot||{}));
@@ -718,21 +725,26 @@ async function prepararSnapshotNuvem(snapshot){
   const compactas=[];
   for(const linha of linhas){
     const original=await linhaGet(linha.id).catch(()=>linha);
-    const refs=await sincronizarFotosLinhaSupabase(original||linha);
+    const refs=await sincronizarFotosLinhaSupabase(original||linha,(done,total)=>{if(total)cloudMsg(`☁️ ${linha.titulo||'Linha'}: foto ${done}/${total} sincronizada`);});
     const clone=JSON.parse(JSON.stringify(linha));
     clone.modelos=(Array.isArray(clone.modelos)?clone.modelos:[]).map((m)=>{
       const r=refs.find(x=>x.modelId===m.id);
       const fotoRefs=Array.isArray(r?.fotos)?r.fotos:[];
+      const fotosOriginais=Array.isArray(m.fotos)?m.fotos.length:0;
+      if(fotosOriginais!==fotoRefs.length)throw new Error(`A linha ${linha.titulo||''} ficou com ${fotoRefs.length} de ${fotosOriginais} foto(s) sincronizada(s) no modelo ${m.tipo||''}.`);
       delete m.fotos;
       m.fotosRemotas=fotoRefs;
+      m.fotosCount=fotoRefs.length;
       return m;
     });
+    clone.fotosSincronizadas=(clone.modelos||[]).reduce((n,m)=>n+Number(m.fotosCount||0),0);
     compactas.push(clone);
   }
   out.linhas=compactas;
   const midia=await sincronizarMidiasBackupNuvem();
   out.midia={total:midia.total,novas:midia.novas,existentes:midia.existentes,manifest:midia.manifest};
-  out.cloudSchema='GIBIPRINTS_CLOUD_BACKUP_V3';
+  out.cloudSchema='GIBIPRINTS_CLOUD_BACKUP_V4';
+  out.midiaLinhas={total:(out.linhas||[]).reduce((n,l)=>n+Number(l.fotosSincronizadas||0),0),status:'sincronizadas-no-storage'};
   return out;
 }
 async function hidratarLinhasDoBackup(linhas){
@@ -1156,8 +1168,17 @@ async function coletarMidiasLocaisBackup(){
 }
 async function sincronizarMidiasBackupNuvem(){
  const itens=await coletarMidiasLocaisBackup(); if(!sbSession)return {total:itens.length,novas:0,existentes:itens.length,manifest:itens.map(x=>({hash:x.hash,origem:x.origem,mime_type:x.mime_type,tamanho_bytes:x.tamanho_bytes}))};
- const manifest=[]; let novas=0,existentes=0;
- for(const item of itens){const ext=extFromMime(item.mime_type);const path=`backup-midia/${item.hash}.${ext}`;const up=await sbClient.storage.from(CATALOG_SUPABASE_BUCKET).upload(path,item.blob,{contentType:item.mime_type,upsert:false,cacheControl:'31536000'});if(up.error&&!/already exists/i.test(up.error.message||''))throw new Error(`Mídia ${item.origem}: ${up.error.message||'falha no upload'}`);if(up.error)existentes++;else novas++;const pub=sbClient.storage.from(CATALOG_SUPABASE_BUCKET).getPublicUrl(path).data.publicUrl;manifest.push({hash:item.hash,origem:item.origem,mime_type:item.mime_type,tamanho_bytes:item.tamanho_bytes,storage_path:path,public_url:pub});}
+ const manifest=new Array(itens.length); let novas=0,existentes=0; let cursor=0;
+ async function worker(){
+   while(true){const i=cursor++;if(i>=itens.length)return;const item=itens[i];const ext=extFromMime(item.mime_type);const path=`backup-midia/${item.hash}.${ext}`;
+     const up=await sbClient.storage.from(CATALOG_SUPABASE_BUCKET).upload(path,item.blob,{contentType:item.mime_type,upsert:false,cacheControl:'31536000'});
+     if(up.error&&!/already exists/i.test(up.error.message||''))throw new Error(`Mídia ${item.origem}: ${up.error.message||'falha no upload'}`);
+     if(up.error)existentes++;else novas++;
+     const pub=sbClient.storage.from(CATALOG_SUPABASE_BUCKET).getPublicUrl(path).data.publicUrl;
+     manifest[i]={hash:item.hash,origem:item.origem,mime_type:item.mime_type,tamanho_bytes:item.tamanho_bytes,storage_path:path,public_url:pub};
+   }
+ }
+ await Promise.all(Array.from({length:Math.min(5,Math.max(1,itens.length))},()=>worker()));
  return {total:itens.length,novas,existentes,manifest};
 }
 
