@@ -1223,49 +1223,83 @@ async function excluirPedido(id){if(!confirm('Deseja realmente excluir este orç
 function novoOrcamento(){showTab('orcamento');pedidoEmEdicaoId=null;modoEdicaoPedido='novo';items=[];document.getElementById('cliente').value='';document.getElementById('clienteWhats').value='';document.getElementById('clienteRua').value='';document.getElementById('clienteNumero').value='';document.getElementById('clienteComplemento').value='';document.getElementById('clienteBairro').value='';document.getElementById('clienteCidade').value='Rio de Janeiro';document.getElementById('clienteUF').value='RJ';document.getElementById('clienteCEP').value='';document.getElementById('obs').value='';addItem();window.scrollTo({top:0,behavior:'smooth'});}
 async function coletarMidiasLocaisBackup(){
  const itens=[];
- const add=async(src,origem)=>{
+ const add=async(src,origem,meta={})=>{
    if(!src||typeof src!=='string'||!src.startsWith('data:image/'))return;
    const blob=dataUrlToBlob(src);if(!blob)return;
    const hash=await sha256Hex(blob);
-   itens.push({hash,origem,mime_type:blob.type||'image/jpeg',tamanho_bytes:blob.size,blob});
+   itens.push({hash,origem,mime_type:blob.type||'image/jpeg',tamanho_bytes:blob.size,blob,...meta});
  };
- try{for(const rec of await catalogGetAllPhotos())await add(rec?.data,'catalogo');}catch(e){console.warn('Inventário fotos catálogo:',e);}
- try{for(const l of await linhaAll())for(const m of (l.modelos||[]))for(let i=0;i<(m.fotos||[]).length;i++)await add(m.fotos[i],`linha:${l.id}:${m.id}:${i}`);}catch(e){console.warn('Inventário fotos linhas:',e);}
- try{const cfg=getDadosPagamento();await add(cfg.qrCode,'qr_code');}catch(e){}
+ try{
+   for(const rec of await catalogGetAllPhotos()){
+     await add(rec?.data,`catalogo:${rec?.produtoId||''}:${rec?.id||''}:${Number(rec?.ordem||0)}`,{
+       tipo:'catalogo',produtoId:rec?.produtoId||'',photoId:rec?.id||'',ordem:Number(rec?.ordem||0)
+     });
+   }
+ }catch(e){console.warn('Inventário fotos catálogo:',e);}
+ try{
+   for(const l of await linhaAll()){
+     for(const m of (l.modelos||[])){
+       for(let i=0;i<(m.fotos||[]).length;i++){
+         await add(m.fotos[i],`linha:${l.id}:${m.id}:${i}`,{
+           tipo:'linha',linhaId:l.id,modeloId:m.id,ordem:i
+         });
+       }
+     }
+   }
+ }catch(e){console.warn('Inventário fotos linhas:',e);}
+ try{const cfg=getDadosPagamento();await add(cfg.qrCode,'qr_code',{tipo:'qr_code'});}catch(e){}
  return itens;
 }
 
-/* V19 — O backup da nuvem agora usa UM inventário único para todas as mídias.
-   Isso garante que as fotos das Linhas / Mostruários sejam realmente enviadas ao
-   Storage e também fiquem referenciadas dentro do snapshot que será restaurado.
-   Não fazemos deduplicação por origem: cada foto local recebe sua referência;
-   quando o conteúdo é igual, o mesmo arquivo físico pode ser reutilizado pelo hash. */
+/* V20 — inventário único de mídias com origem explícita.
+   Produtos e Linhas agora carregam seus próprios identificadores no manifesto,
+   permitindo que a restauração reconstrua as fotos no aparelho. O upload evita
+   consultas/upload repetidos para arquivos que já existem no Storage. */
 async function sincronizarMidiasBackupNuvem(){
  const itens=await coletarMidiasLocaisBackup();
- if(!sbSession)return {total:itens.length,novas:0,existentes:itens.length,manifest:itens.map(x=>({hash:x.hash,origem:x.origem,mime_type:x.mime_type,tamanho_bytes:x.tamanho_bytes}))};
- const manifest=new Array(itens.length);let novas=0,existentes=0;let cursor=0;
+ if(!sbSession)return {total:itens.length,novas:0,existentes:itens.length,manifest:itens.map(x=>({hash:x.hash,origem:x.origem,tipo:x.tipo,produtoId:x.produtoId||'',photoId:x.photoId||'',linhaId:x.linhaId||'',modeloId:x.modeloId||'',ordem:Number(x.ordem||0),mime_type:x.mime_type,tamanho_bytes:x.tamanho_bytes}))};
+ const manifest=new Array(itens.length);
+ let novas=0,existentes=0;
+ let arquivosExistentes=new Set();
+ try{
+   const r=await sbClient.storage.from(CATALOG_SUPABASE_BUCKET).list('backup-midia',{limit:1000,offset:0,sortBy:{column:'name',order:'asc'}});
+   if(!r.error)arquivosExistentes=new Set((r.data||[]).map(x=>String(x.name||'')));
+ }catch(e){console.warn('Lista do Storage de backup:',e);}
+ const porHash=new Map();
+ for(let i=0;i<itens.length;i++){
+   const item=itens[i];
+   const original=await prepararImagemLinhaUpload(item.blob,1600,0.80);
+   const hash=await sha256Hex(original);
+   if(!porHash.has(hash))porHash.set(hash,{blob:original,hash});
+   item.__uploadHash=hash; item.__uploadBlob=original;
+ }
+ const uploadResults=new Map();
+ const uniqueUploads=[...porHash.values()];
+ let cursor=0;
  async function worker(){
    while(true){
-     const i=cursor++;if(i>=itens.length)return;
-     const item=itens[i];
-     let blob=await prepararImagemLinhaUpload(item.blob,1600,0.80);
-     let hash=await sha256Hex(blob);
-     let ext='jpg';
-     let path=`backup-midia/${hash}.${ext}`;
-     let up=await uploadStorageComRetry(path,blob,{contentType:'image/jpeg',upsert:false,cacheControl:'31536000'},3);
-     if(up.error&&!/already exists/i.test(up.error.message||'')){
-       blob=await prepararImagemLinhaUpload(item.blob,1200,0.65);
-       hash=await sha256Hex(blob);path=`backup-midia/${hash}.jpg`;
-       up=await uploadStorageComRetry(path,blob,{contentType:'image/jpeg',upsert:false,cacheControl:'31536000'},3);
+     const i=cursor++;if(i>=uniqueUploads.length)return;
+     const item=uniqueUploads[i];
+     const path=`backup-midia/${item.hash}.jpg`;
+     const nome=path.split('/').pop();
+     if(arquivosExistentes.has(nome)){
+       uploadResults.set(item.hash,{path,blob:item.blob,jaExistia:true});
+       return;
      }
-     if(up.error&&!/already exists/i.test(up.error.message||''))throw new Error(`Mídia ${item.origem}: ${up.error.message||'falha no upload'}`);
-     if(up.error)existentes++;else novas++;
-     const pub=sbClient.storage.from(CATALOG_SUPABASE_BUCKET).getPublicUrl(path).data.publicUrl;
-     manifest[i]={hash,origem:item.origem,mime_type:'image/jpeg',tamanho_bytes:blob.size,storage_path:path,public_url:pub};
+     const up=await uploadStorageComRetry(path,item.blob,{contentType:'image/jpeg',upsert:false,cacheControl:'31536000'},2);
+     if(up.error&&!/already exists/i.test(up.error.message||''))throw new Error(`Mídia ${item.hash}: ${up.error.message||'falha no upload'}`);
+     const ja=!!up.error;
+     if(ja)arquivosExistentes.add(nome);else novas++;
+     uploadResults.set(item.hash,{path,blob:item.blob,jaExistia:ja});
    }
  }
- const workers=Array.from({length:Math.min(2,Math.max(1,itens.length))},()=>worker());
- await Promise.all(workers);
+ await Promise.all(Array.from({length:Math.min(4,Math.max(1,uniqueUploads.length))},()=>worker()));
+ for(const item of itens){
+   const u=uploadResults.get(item.__uploadHash);if(!u)throw new Error(`Mídia ${item.origem}: resultado do upload não encontrado.`);
+   if(u.jaExistia)existentes++;
+   const pub=sbClient.storage.from(CATALOG_SUPABASE_BUCKET).getPublicUrl(u.path).data.publicUrl;
+   manifest.push({hash:item.__uploadHash,origem:item.origem,tipo:item.tipo,produtoId:item.produtoId||'',photoId:item.photoId||'',linhaId:item.linhaId||'',modeloId:item.modeloId||'',ordem:Number(item.ordem||0),mime_type:'image/jpeg',tamanho_bytes:u.blob.size,storage_path:u.path,public_url:pub});
+ }
  return {total:itens.length,novas,existentes,manifest};
 }
 
@@ -1352,6 +1386,38 @@ async function exportarBackup(){
  }catch(e){console.error('Backup:',e);alert('Não foi possível concluir o backup.\n\n'+(e?.message||e));}
 }
 
+async function restaurarFotosCatalogoDoBackup(snapshot){
+  const manifest=Array.isArray(snapshot?.midia?.manifest)?snapshot.midia.manifest:[];
+  const refs=manifest.filter(x=>x?.tipo==='catalogo'&&x?.public_url&&x?.produtoId);
+  if(!refs.length)return {restauradas:0,produtos:0};
+  await initCatalogStorage();
+  const d=getCatalogData();
+  let restauradas=0;
+  const porProduto=new Map();
+  for(const ref of refs){
+    try{
+      const res=await fetch(ref.public_url,{cache:'no-store'});
+      if(!res.ok)throw new Error('HTTP '+res.status);
+      const data=await blobToDataUrl(await res.blob());
+      if(!data)continue;
+      const id=ref.photoId||`${ref.produtoId}_backup_${ref.hash}`;
+      await catalogPut(CATALOG_PHOTO_STORE,{id,data,ordem:Number(ref.ordem||0),produtoId:String(ref.produtoId),atualizadoEm:new Date().toISOString()});
+      if(!porProduto.has(String(ref.produtoId)))porProduto.set(String(ref.produtoId),[]);
+      porProduto.get(String(ref.produtoId)).push({id,ordem:Number(ref.ordem||0)});
+      restauradas++;
+    }catch(e){console.warn('Falha ao restaurar foto de produto:',ref?.public_url,e);}
+  }
+  for(const p of (d.produtos||[])){
+    const refsP=porProduto.get(String(p.id));
+    if(!refsP?.length)continue;
+    refsP.sort((a,b)=>a.ordem-b.ordem);
+    p.fotoIds=refsP.map(x=>x.id).slice(0,30);
+  }
+  await catalogPut(CATALOG_STORE,{id:'singleton',data:d,versao:12,atualizadoEm:new Date().toISOString()});
+  catalogDataCache=d;
+  return {restauradas,produtos:porProduto.size};
+}
+
 async function restaurarMidiaEspecialBackup(midia){
  const ref=(midia?.manifest||[]).find(x=>x?.origem==='qr_code'&&x?.public_url);
  if(!ref)return;
@@ -1376,6 +1442,7 @@ async function restaurarUltimoBackupNuvem(){
   for(const p of pedidos)await localDbPut('pedidos',p);
   await substituirLinhasLocais(linhas);
   await restaurarMidiaEspecialBackup(snapshot.midia);
+  await restaurarFotosCatalogoDoBackup(snapshot);
   PRODUCTS={...(snapshot.produtos||{})};
   PRODUCT_META={...(snapshot.productMeta||{})};
   persistProductsLocal();
@@ -1398,6 +1465,7 @@ async function restaurarBackup(ev){
   if(data.produtos){PRODUCTS={...(data.produtos||{})};PRODUCT_META={...(data.productMeta||{})};persistProductsLocal();}
   if(Array.isArray(data.linhas))await substituirLinhasLocais(data.linhas);
   await restaurarMidiaEspecialBackup(data.midia);
+  await restaurarFotosCatalogoDoBackup(data);
   cloudStoresSynced.add('clientes');cloudStoresSynced.add('pedidos');cloudStoresSynced.add('produtos');
   await renderHistorico();renderItems();renderProdutoAdmin();renderResumo();renderLinhasAdmin();
   alert(`Backup restaurado com sucesso.\n\nClientes: ${(data.clientes||[]).length}\nPedidos: ${(data.pedidos||[]).length}\nProdutos: ${Object.keys(data.produtos||PRODUCTS||{}).length}\nLinhas: ${(data.linhas||[]).length}`);
@@ -3265,6 +3333,7 @@ async function renderLinhasAdmin(){
           +'<button class="secondary" type="button" onclick="editarLinhaSalva(\''+xId+'\')">✏️ Editar</button>'
           +'<button class="secondary" type="button" onclick="alternarCatalogoLinha(\''+xId+'\')">'+(xAtivo?'🙈 Ocultar do catálogo':'👁️ Mostrar no catálogo')+'</button>'
           +'<button class="primary" type="button" onclick="enviarLinhaSalva(\''+xId+'\')">📤 Enviar Linha</button>'
+          +'<button class="primary" type="button" onclick="enviarFotosLinhaSalva(\''+xId+'\')">📷 Enviar Fotos</button>'
           +'<button class="secondary" type="button" onclick="excluirLinhaSalva(\''+xId+'\')">🗑️ Excluir</button>'
           +'</div></div></article>';
       }).join('');
@@ -3304,6 +3373,38 @@ function linhaAdminPointerEnd(e){
 }
 function linhaAdminPointerCancel(e){linhaAdminPointer.active=false;e?.stopPropagation();}
 async function editarLinhaSalva(id){const l=await linhaGet(id);if(!l)return;linhaAtual=JSON.parse(JSON.stringify(l));linhaFotosTemporarias=[];popularTiposLinha();document.getElementById('linhaTitulo').value=l.titulo||'';renderLinhaFotosTemp();renderLinhaPreview();document.getElementById('linhaModal').classList.add('open');document.getElementById('linhaModal').setAttribute('aria-hidden','false');}
+async function enviarFotosLinhaSalva(id){
+  const l=await linhaGet(id);if(!l)return;
+  const fontes=[];
+  for(const m of (l.modelos||[]))for(let i=0;i<(m.fotos||[]).length;i++){
+    const src=m.fotos[i];if(typeof src==='string'&&src.startsWith('data:image/'))fontes.push({src,nome:`${l.titulo||'linha'}-${m.tipo||'modelo'}-${i+1}.jpg`});
+  }
+  if(!fontes.length){alert('Esta linha não possui fotos locais para enviar. Restaure o backup da nuvem primeiro.');return;}
+  try{
+    const files=[];
+    for(const f of fontes){
+      const blob=dataUrlToBlob(f.src);if(!blob)continue;
+      const mime=blob.type||'image/jpeg';
+      const ext=extFromMime(mime);
+      files.push(new File([blob],String(f.nome).replace(/\.[^.]+$/,'')+'.'+ext,{type:mime,lastModified:Date.now()}));
+    }
+    if(!files.length)throw new Error('Não foi possível preparar as fotos para compartilhamento.');
+    const shareData={title:`Fotos — ${l.titulo||'Linha'}`,text:`Fotos da linha ${l.titulo||''}`.trim(),files};
+    if(navigator.share && (!navigator.canShare || navigator.canShare({files}))){
+      await navigator.share(shareData);
+      return;
+    }
+    /* Fallback: baixa as fotos individualmente quando o navegador não oferece
+       compartilhamento de múltiplos arquivos. */
+    for(const file of files){const a=document.createElement('a');a.href=URL.createObjectURL(file);a.download=file.name;a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1500);}
+    alert(`O navegador não permite enviar ${files.length} fotos diretamente. As fotos foram preparadas para download; depois você pode anexá-las no WhatsApp.`);
+  }catch(e){
+    if(e?.name==='AbortError')return;
+    console.error('Enviar fotos da linha:',e);
+    alert('Não foi possível enviar as fotos da linha.\n\n'+(e?.message||e));
+  }
+}
+
 async function enviarLinhaSalva(id){const l=await linhaGet(id);if(!l)return;linhaAtual=JSON.parse(JSON.stringify(l));document.getElementById('linhaTitulo').value=l.titulo||'';renderLinhaPreview();await exportarLinhaMostruario();}
 async function alternarCatalogoLinha(id){
   const l=await linhaGet(id);if(!l)return;

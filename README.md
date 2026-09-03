@@ -26,3 +26,13 @@ V18 — upload robusto de fotos das linhas: compressão apenas para a cópia da 
 
 ## V19 — fotos das linhas na nuvem
 O backup usa um inventário único de mídias e envia também todas as fotos de Linhas/Mostruários ao Supabase Storage, mantendo referências remotas no snapshot para restauração.
+
+
+## V20 — fotos completas + envio das fotos das linhas
+- Backup da nuvem registra a origem e o ID de cada foto de produto e de linha.
+- Fotos são deduplicadas por conteúdo para reduzir tempo e tráfego de upload.
+- O backup consulta o Storage antes de reenviar arquivos já existentes e usa até 4 uploads simultâneos.
+- Restauração do backup reconstrói as fotos dos produtos no armazenamento local do catálogo.
+- Restauração do backup reconstrói as fotos das Linhas/Mostruários no armazenamento local das linhas.
+- Cada linha salva ganhou o botão **📷 Enviar Fotos**, que prepara todas as fotos da linha e abre o compartilhamento nativo do Android/WhatsApp quando disponível.
+- O botão **📤 Enviar Linha** continua gerando a arte da linha normalmente.
