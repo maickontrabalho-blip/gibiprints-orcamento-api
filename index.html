@@ -34,7 +34,7 @@ table{width:100%;border-collapse:collapse}th,td{padding:7px;border-bottom:1px so
 .product-admin-grid{display:grid;gap:10px}.product-admin-card{border:1px solid #d6dfd4;border-radius:12px;padding:12px;background:#fff}.product-admin-head{display:flex;justify-content:space-between;gap:8px;align-items:flex-start}.product-admin-actions{display:flex;flex-direction:column;gap:6px;min-width:92px}.product-admin-actions button{width:100%;padding:8px 10px;font-size:13px}.product-admin-actions .delete-product{border-color:#efc6c6;color:#a32323;background:#fff4f4}.price-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin-top:10px}.price-grid input{font-weight:800}.pill{display:inline-block;padding:4px 8px;border-radius:999px;background:#eef5eb;color:#176a38;font-size:11px;font-weight:800}.pill.off{background:#f4eeee;color:#9b2020}@media(max-width:680px){.price-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.tabbar{top:0;position:sticky}}
 .danger{border-color:#d66;color:#a11!important}.catalog-admin-card .cat-actions{flex-wrap:wrap}.catalog-admin-card .cat-actions button{min-width:0}.photo-order{position:absolute;left:5px;top:5px;background:rgba(0,0,0,.65);color:#fff;border-radius:999px;padding:3px 7px;font-size:11px;font-weight:900}.photo-move{position:absolute;left:5px;bottom:5px;display:flex;gap:4px}.photo-move button{position:static!important;width:auto!important;height:28px!important;border-radius:8px!important;background:#fff!important;padding:0 8px!important}.photo-move button:disabled{opacity:.35}.catalog-photo>button:last-child{z-index:3}
 
-/* GIBIPRINTS — Linhas / Mostruário V1 */
+/* GIBIPRINTS — Linhas / Mostruário V2 */
 .linha-modal{position:fixed;inset:0;background:rgba(3,20,12,.68);z-index:9999;display:none;align-items:flex-start;justify-content:center;padding:18px;overflow:auto}
 .linha-modal.open{display:flex}.linha-modal-card{width:min(1080px,100%);margin:12px auto;background:#fff;border-radius:20px;box-shadow:0 24px 70px rgba(0,0,0,.25);overflow:hidden}
 .linha-modal-head{background:#062519;border-top:8px solid #f7be14;color:#fff;padding:18px 20px;display:flex;justify-content:space-between;gap:12px;align-items:center}.linha-modal-head h2{color:#fff;margin:0}.linha-modal-head small{color:#f7be14;font-weight:700}
@@ -786,21 +786,19 @@ async function sincronizarFotosLinhaSupabase(linha,onProgress){
 }
 async function prepararSnapshotNuvem(snapshot){
  const out=JSON.parse(JSON.stringify(snapshot||{}));
+ /* As fotos das linhas agora são enviadas pelo fluxo de sincronização do catálogo
+    diretamente para Storage/linhas/. O snapshot apenas registra essas referências;
+    assim não fazemos um segundo upload desnecessário para backup-midia/. */
  const midia=await sincronizarMidiasBackupNuvem();
  const manifest=Array.isArray(midia.manifest)?midia.manifest:[];
  const linhas=Array.isArray(out.linhas)?out.linhas:[];
  const compactas=linhas.map(linha=>{
    const clone=JSON.parse(JSON.stringify(linha));
    clone.modelos=(Array.isArray(clone.modelos)?clone.modelos:[]).map(m=>{
-     const refs=manifest
-       .filter(x=>String(x?.origem||'').startsWith(`linha:${linha.id}:${m.id}:`))
-       .sort((a,b)=>{
-         const ai=Number(String(a.origem).split(':').pop());
-         const bi=Number(String(b.origem).split(':').pop());
-         return ai-bi;
-       })
-       .map((x,i)=>({storage_path:x.storage_path,public_url:x.public_url,content_hash:x.hash,mime_type:x.mime_type,ordem:i,tamanho_bytes:x.tamanho_bytes}));
-     const fotosOriginais=Array.isArray(m.fotos)?m.fotos.length:0;
+     const remotas=Array.isArray(m.fotosRemotas)?m.fotosRemotas.filter(x=>x?.storage_path||x?.public_url):[];
+     const refs=remotas.length?remotas.map((x,i)=>({storage_path:x.storage_path||'',public_url:x.public_url||'',content_hash:x.content_hash||x.hash||'',mime_type:x.mime_type||'image/jpeg',ordem:Number(x.ordem??i),tamanho_bytes:Number(x.tamanho_bytes||0)}))
+       :manifest.filter(x=>String(x?.origem||'').startsWith(`linha:${linha.id}:${m.id}:`)).sort((a,b)=>Number(String(a.origem).split(':').pop())-Number(String(b.origem).split(':').pop())).map((x,i)=>({storage_path:x.storage_path,public_url:x.public_url,content_hash:x.hash,mime_type:x.mime_type,ordem:i,tamanho_bytes:x.tamanho_bytes}));
+     const fotosOriginais=Array.isArray(m.fotos)?m.fotos.length:Number(m.fotosCount||0);
      if(fotosOriginais!==refs.length)throw new Error(`A linha ${linha.titulo||''} ficou com ${refs.length} de ${fotosOriginais} foto(s) sincronizada(s) no modelo ${m.tipo||''}.`);
      delete m.fotos;
      m.fotosRemotas=refs;
@@ -811,10 +809,11 @@ async function prepararSnapshotNuvem(snapshot){
    return clone;
  });
  out.linhas=compactas;
- out.midia={total:midia.total,novas:midia.novas,existentes:midia.existentes,manifest};
- out.cloudSchema='GIBIPRINTS_CLOUD_BACKUP_V5';
- out.midiaLinhas={total:(out.linhas||[]).reduce((n,l)=>n+Number(l.fotosSincronizadas||0),0),status:'sincronizadas-no-storage'};
- out.midiaProdutos={total:manifest.filter(x=>x?.tipo==='catalogo').length,status:'sincronizadas-no-storage'};
+ const fotosLinhas=(out.linhas||[]).reduce((n,l)=>n+Number(l.fotosSincronizadas||0),0);
+ out.midia={total:Number(midia.total||0)+fotosLinhas,novas:Number(midia.novas||0),existentes:Number(midia.existentes||0),manifest:[...manifest,...(out.linhas||[]).flatMap(l=>(l.modelos||[]).flatMap(m=>(m.fotosRemotas||[]).map((x,i)=>({hash:x.content_hash||x.hash||'',origem:`linha:${l.id}:${m.id}:${i}`,tipo:'linha',linhaId:l.id,modeloId:m.id,ordem:i,mime_type:x.mime_type||'image/jpeg',tamanho_bytes:Number(x.tamanho_bytes||0),storage_path:x.storage_path,public_url:x.public_url}))))]};
+ out.cloudSchema='GIBIPRINTS_CLOUD_BACKUP_V6';
+ out.midiaLinhas={total:fotosLinhas,status:'sincronizadas-no-storage'};
+ out.midiaProdutos={total:out.midia.manifest.filter(x=>x?.tipo==='catalogo').length,status:'sincronizadas-no-storage'};
  return out;
 }
 
@@ -884,15 +883,34 @@ async function sincronizarCatalogoAtual(){
     }
     persistProductsLocal();cloudStoresSynced.delete('produtos');
 
+    // Envia as fotos das Linhas diretamente para Storage/linhas/.
+    // O backup/snapshot seguinte apenas registra as referências, evitando um segundo upload.
+    let fotosLinhasNovas=0,fotosLinhasExistentes=0,fotosLinhasTotal=0;
+    for(const linha of linhasLocais){
+      const refs=await sincronizarFotosLinhaSupabase(linha,(at,total)=>cloudMsg(`☁️ Linha ${linha.titulo||''}: foto ${at}/${total}`));
+      for(const r of (refs||[])){
+        const localModelo=(linha.modelos||[]).find(m=>m.id===r.modelId);
+        if(localModelo){
+          const antigas=Array.isArray(localModelo.fotosRemotas)?localModelo.fotosRemotas:[];
+          localModelo.fotosRemotas=r.fotos||[];
+          fotosLinhasTotal+=Number((r.fotos||[]).length);
+          fotosLinhasNovas+=Math.max(0,(r.fotos||[]).length-antigas.length);
+          fotosLinhasExistentes+=Math.min((r.fotos||[]).length,antigas.length);
+        }
+      }
+      linha.atualizadoEm=new Date().toISOString();
+      await linhaPut(linha);
+    }
+
     // A sincronização do catálogo também atualiza o BACKUP COMPLETO na nuvem.
     // Isso inclui as Linhas / Mostruários, que ficam em IndexedDB separado dos produtos.
     const snapshotCompleto=await montarSnapshotBackup();
     await salvarSnapshotBackupNuvem(snapshotCompleto);
     const linhasEnviadas=Array.isArray(snapshotCompleto.linhas)?snapshotCompleto.linhas.length:0;
 
-    cloudMsg(`Backup concluído: ${produtosOk} produto(s) e ${linhasEnviadas} linha(s) sincronizados.`);
+    cloudMsg(`Nuvem atualizada: ${produtosOk} produto(s), ${linhasEnviadas} linha(s) e ${fotosLinhasTotal} foto(s) de linhas.`);
     renderItems();renderProdutoAdmin();renderResumo();renderLinhasAdmin();renderCatalogLinhas();
-    alert(`Backup concluído!\n\nProdutos sincronizados: ${produtosOk}\nLinhas / Mostruários sincronizados: ${linhasEnviadas}\nRegistros antigos removidos da nuvem: ${antigos.length}\nFotos novas enviadas: ${fotosNovas}\nFotos que já estavam na nuvem: ${fotosExistentes}`);
+    alert(`Catálogo enviado para a nuvem!\n\nProdutos sincronizados: ${produtosOk}\nLinhas / Mostruários sincronizados: ${linhasEnviadas}\nFotos dos produtos novas: ${fotosNovas}\nFotos dos produtos já existentes: ${fotosExistentes}\nFotos das linhas: ${fotosLinhasTotal}\nFotos das linhas novas: ${fotosLinhasNovas}\nFotos das linhas já vinculadas: ${fotosLinhasExistentes}\nRegistros antigos removidos da nuvem: ${antigos.length}`);
     return true;
   }catch(e){
     console.error('Backup do catálogo:',e);cloudMsg('Erro no backup do catálogo.');
@@ -1247,8 +1265,13 @@ async function coletarMidiasLocaisBackup(){
  try{
    for(const l of await linhaAll()){
      for(const m of (l.modelos||[])){
-       for(let i=0;i<(m.fotos||[]).length;i++){
-         await add(m.fotos[i],`linha:${l.id}:${m.id}:${i}`,{
+       const fotos=Array.isArray(m.fotos)?m.fotos:[];
+       const remotas=Array.isArray(m.fotosRemotas)?m.fotosRemotas:[];
+       /* Se todas as fotos já possuem referência remota, elas já foram enviadas
+          para Storage/linhas/ e não precisam ser copiadas novamente para backup-midia/. */
+       if(fotos.length && remotas.length>=fotos.length)continue;
+       for(let i=0;i<fotos.length;i++){
+         await add(fotos[i],`linha:${l.id}:${m.id}:${i}`,{
            tipo:'linha',linhaId:l.id,modeloId:m.id,ordem:i
          });
        }
@@ -1259,7 +1282,7 @@ async function coletarMidiasLocaisBackup(){
  return itens;
 }
 
-/* V20 — inventário único de mídias com origem explícita.
+/* V22 — inventário único de mídias com origem explícita.
    Produtos e Linhas agora carregam seus próprios identificadores no manifesto,
    permitindo que a restauração reconstrua as fotos no aparelho. O upload evita
    consultas/upload repetidos para arquivos que já existem no Storage. */
