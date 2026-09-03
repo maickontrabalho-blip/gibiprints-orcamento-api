@@ -1,3 +1,5 @@
-# GIBIPRINTS — Nova Linha V5
+GIBIPRINTS — V14
 
-Versão de teste com carrossel independente de linhas e modelos, swipe por toque no modelo, visual compacto no catálogo, ordem padrão dos modelos, painel editável de Linhas dentro de Produtos, backup/restauração das linhas preservados e exportação da Linha sem preços.
+Correção do backup completo na nuvem: o snapshot não depende mais de ON CONFLICT em sync_id, permitindo salvar/restaurar mesmo quando pedidos.sync_id não possui constraint UNIQUE.
+
+Também inclui a paleta de 21 cores do fornecedor, incluindo Marrom.

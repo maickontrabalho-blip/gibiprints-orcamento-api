@@ -1,4 +1,4 @@
-const CACHE_NAME = 'gbprints-cache-v13';
+const CACHE_NAME = 'gbprints-cache-v14';
 
 const APP_FILES = [
   './',

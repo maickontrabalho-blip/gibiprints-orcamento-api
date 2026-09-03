@@ -1112,8 +1112,34 @@ async function salvarSnapshotBackupNuvem(snapshot){
  if(!sbSession)throw new Error('Faça login na nuvem antes de fazer o backup.');
  const compacto=await prepararSnapshotNuvem(snapshot);
  const row={sync_id:CLOUD_BACKUP_SYNC_ID,dados:{sync_id:CLOUD_BACKUP_SYNC_ID,tipo:'GIBIPRINTS_CLOUD_BACKUP',backup:compacto}};
- const {error}=await sbClient.from('pedidos').upsert(row,{onConflict:'sync_id'});
- if(error)throw new Error(`Supabase pedidos: ${error.message||error.code||'erro ao salvar backup'}`);
+
+ // NÃO usamos upsert/onConflict aqui: a tabela pedidos do projeto pode não ter
+ // uma constraint UNIQUE em sync_id. O backup é um registro especial conhecido,
+ // então localizamos esse registro e atualizamos pelo id; se ainda não existir, inserimos.
+ let {data:existentes,error:findError}=await sbClient
+   .from('pedidos')
+   .select('id,sync_id')
+   .eq('sync_id',CLOUD_BACKUP_SYNC_ID)
+   .order('id',{ascending:true})
+   .limit(50);
+ if(findError)throw new Error(`Supabase pedidos: ${findError.message||findError.code||'erro ao localizar backup'}`);
+ existentes=Array.isArray(existentes)?existentes:[];
+
+ if(existentes.length){
+   const principal=existentes[0];
+   const {error:updateError}=await sbClient.from('pedidos').update({dados:row.dados}).eq('id',principal.id);
+   if(updateError)throw new Error(`Supabase pedidos: ${updateError.message||updateError.code||'erro ao atualizar backup'}`);
+
+   // Limpa eventuais duplicatas antigas do mesmo backup.
+   for(const extra of existentes.slice(1)){
+     const {error:deleteError}=await sbClient.from('pedidos').delete().eq('id',extra.id);
+     if(deleteError)throw new Error(`Supabase pedidos: ${deleteError.message||deleteError.code||'erro ao limpar backup duplicado'}`);
+   }
+   return;
+ }
+
+ const {error:insertError}=await sbClient.from('pedidos').insert(row);
+ if(insertError)throw new Error(`Supabase pedidos: ${insertError.message||insertError.code||'erro ao criar backup'}`);
 }
 
 async function exportarBackup(){
@@ -1131,8 +1157,9 @@ async function restaurarUltimoBackupNuvem(){
  if(!confirm('Restaurar o ÚLTIMO backup salvo na nuvem?\n\nIsso substituirá os clientes, pedidos, produtos e linhas deste aparelho pelo conteúdo do último backup.'))return;
  try{
   cloudMsg('Buscando último backup na nuvem...');
-  const {data,error}=await sbClient.from('pedidos').select('sync_id,dados').eq('sync_id',CLOUD_BACKUP_SYNC_ID).maybeSingle();
+  const {data:backupRows,error}=await sbClient.from('pedidos').select('sync_id,dados,id').eq('sync_id',CLOUD_BACKUP_SYNC_ID).order('id',{ascending:false}).limit(1);
   if(error)throw error;
+  const data=Array.isArray(backupRows)?backupRows[0]:null;
   const snapshot=data?.dados?.backup;
   if(!snapshot||snapshot.tipo!=='GIBIPRINTS_CLOUD_BACKUP')throw new Error('Nenhum backup completo da nuvem foi encontrado.');
   const clientes=Array.isArray(snapshot.clientes)?snapshot.clientes:[];
