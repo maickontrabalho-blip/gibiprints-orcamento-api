@@ -8,3 +8,6 @@ Correção do envio do catálogo para a nuvem:
 - o botão `📷 Enviar Fotos` das linhas e produtos permanece disponível.
 
 Não altera as fotos originais armazenadas no aparelho.
+
+
+V24: diagnóstico detalhado de upload, uploads de linhas sequenciais, erros do Storage não são mais ocultados e referências remotas são persistidas após cada linha.
