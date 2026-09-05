@@ -98,6 +98,9 @@ table{width:100%;border-collapse:collapse}th,td{padding:7px;border-bottom:1px so
 .linha-admin-title-nav:active{transform:scale(.96)}
 .linha-admin-nav{display:none!important}
 @media(max-width:600px){.linha-admin-slide{padding:10px 18px}.linha-admin-titlebar{grid-template-columns:38px 1fr 38px;gap:6px}.linha-admin-title-nav{width:36px;height:36px}.linha-admin-slide h4{font-size:18px}.linha-admin-slide-inner{padding:12px 8px}}
+
+.linha-share-all-values{width:100%;margin-top:10px;border:0;border-radius:14px;padding:15px 16px;background:#7a1f2b;color:#fff;font-weight:900;font-size:16px;letter-spacing:.2px;cursor:pointer;box-shadow:0 2px 0 rgba(0,0,0,.08)}
+.linha-share-all-values:active{transform:translateY(1px)}
 </style>
 
 <link rel="manifest" href="manifest.json">
@@ -3620,7 +3623,7 @@ function renderFilaFotosLinhaValores(){
   const modal=document.getElementById('linhaShareValoresModal');if(!modal)return;
   const item=filaFotosLinhaValores.items[filaFotosLinhaValores.index];if(!item){fecharFilaFotosLinhaValores();return;}
   const total=filaFotosLinhaValores.items.length,idx=filaFotosLinhaValores.index+1;
-  modal.innerHTML=`<div class="linha-share-card"><div class="linha-share-head"><div><h3 style="margin:0">📷 Enviar foto com valores</h3><small>Foto ${idx} de ${total}</small></div><button class="secondary" type="button" onclick="fecharFilaFotosLinhaValores()">✕ Fechar</button></div><div class="linha-share-body"><img src="${escAttr(item.src)}" alt="Foto ${idx}" class="linha-share-preview"><div class="linha-share-message"><label>Mensagem desta foto</label><textarea id="linhaShareMessage" readonly>${esc(item.message)}</textarea><div class="linha-share-actions"><button class="secondary" type="button" onclick="copiarMensagemFotoLinha()">📋 Copiar mensagem</button><button class="primary" type="button" onclick="compartilharFotoLinhaAtual()">📤 Compartilhar esta foto</button><button class="secondary" type="button" onclick="baixarFotoLinhaAtual()">⬇️ Baixar foto</button></div><button class="secondary" type="button" style="width:100%;margin-top:8px" onclick="proximaFotoLinhaValores()">${idx<total?'➡️ Próxima foto':'✅ Concluir'}</button></div></div></div>`;
+  modal.innerHTML=`<div class="linha-share-card"><div class="linha-share-head"><div><h3 style="margin:0">📷 Enviar foto com valores</h3><small>Foto ${idx} de ${total}</small></div><button class="secondary" type="button" onclick="fecharFilaFotosLinhaValores()">✕ Fechar</button></div><div class="linha-share-body"><img src="${escAttr(item.src)}" alt="Foto ${idx}" class="linha-share-preview"><div class="linha-share-message"><label>Mensagem desta foto</label><textarea id="linhaShareMessage" readonly>${esc(item.message)}</textarea><div class="linha-share-actions"><button class="secondary" type="button" onclick="copiarMensagemFotoLinha()">📋 Copiar mensagem</button><button class="primary" type="button" onclick="compartilharFotoLinhaAtual()">📤 Compartilhar esta foto</button><button class="secondary" type="button" onclick="baixarFotoLinhaAtual()">⬇️ Baixar foto</button></div><button class="linha-share-all-values" type="button" onclick="compartilharTodasFotosLinhaValores()">📤 ENVIAR TODAS AS FOTOS</button><button class="secondary" type="button" style="width:100%;margin-top:8px" onclick="proximaFotoLinhaValores()">${idx<total?'➡️ Próxima foto':'✅ Concluir'}</button></div></div></div>`;
   modal.classList.add('open');modal.setAttribute('aria-hidden','false');
 }
 async function copiarMensagemFotoLinha(){const t=document.getElementById('linhaShareMessage');if(!t)return;try{await navigator.clipboard.writeText(t.value);alert('Mensagem copiada.');}catch(e){t.select();document.execCommand('copy');alert('Mensagem copiada.');}}
@@ -3637,6 +3640,32 @@ async function compartilharFotoLinhaAtual(){
 }
 function baixarFotoLinhaAtual(){const item=filaFotosLinhaValores.items[filaFotosLinhaValores.index];if(!item)return;const blob=dataUrlToBlob(item.src);if(!blob)return;const url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=item.nome;a.click();setTimeout(()=>URL.revokeObjectURL(url),1500);}
 function proximaFotoLinhaValores(){if(filaFotosLinhaValores.index<filaFotosLinhaValores.items.length-1){filaFotosLinhaValores.index++;renderFilaFotosLinhaValores();}else fecharFilaFotosLinhaValores();}
+async function compartilharTodasFotosLinhaValores(){
+  const items=filaFotosLinhaValores.items||[];
+  if(!items.length)return;
+  try{
+    for(let i=filaFotosLinhaValores.index;i<items.length;i++){
+      filaFotosLinhaValores.index=i;
+      renderFilaFotosLinhaValores();
+      const item=items[i];
+      const blob=dataUrlToBlob(item.src);
+      if(!blob)throw new Error(`Não foi possível preparar a foto ${i+1}.`);
+      const mime=blob.type||'image/jpeg',ext=extFromMime(mime);
+      const file=new File([blob],String(item.nome).replace(/\.[^.]+$/,'')+'.'+ext,{type:mime,lastModified:Date.now()});
+      if(!(navigator.share && (!navigator.canShare || navigator.canShare({files:[file]})))){
+        await copiarMensagemFotoLinha();
+        baixarFotoLinhaAtual();
+        continue;
+      }
+      await navigator.share({title:`GIBIPRINTS — ${item.modelo}`,text:item.message,files:[file]});
+    }
+    fecharFilaFotosLinhaValores();
+  }catch(e){
+    if(e?.name==='AbortError')return;
+    console.error('Enviar todas as fotos com valores:',e);
+    alert('O compartilhamento foi interrompido. Você pode continuar pela foto atual.\n\n'+(e?.message||e));
+  }
+}
 async function enviarFotosLinhaSalva(id){
   const l=await linhaGet(id);if(!l)return;
   const fontes=[];
