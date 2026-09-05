@@ -11,3 +11,5 @@ Não altera as fotos originais armazenadas no aparelho.
 
 
 V24: diagnóstico detalhado de upload, uploads de linhas sequenciais, erros do Storage não são mais ocultados e referências remotas são persistidas após cada linha.
+
+V25 — logo corrigida com PNG válido embutido; valor por modelo nas linhas; botão Enviar Linha com valores.
