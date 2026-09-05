@@ -237,6 +237,9 @@ header{z-index:20!important}
 .catalog-product-actions button{min-width:0!important;white-space:normal!important;line-height:1.15!important}
 @media(max-width:520px){.catalog-product-actions{grid-template-columns:repeat(3,minmax(0,1fr));gap:5px!important}.catalog-product-actions button{padding:9px 5px!important;font-size:11px!important}}
 </style>
+<style id="linha-share-valores-style">
+.linha-share-card{width:min(760px,calc(100vw - 24px));max-height:calc(100vh - 24px);overflow:auto;background:#fff;border-radius:18px;box-shadow:0 20px 70px rgba(0,0,0,.28);padding:14px}.linha-share-head{display:flex;justify-content:space-between;gap:10px;align-items:center;border-bottom:1px solid #e3e9e4;padding-bottom:10px}.linha-share-body{display:grid;grid-template-columns:minmax(0,1fr) minmax(260px,340px);gap:14px;padding-top:14px}.linha-share-preview{width:100%;max-height:58vh;object-fit:contain;border-radius:12px;background:#f4f7f4}.linha-share-message label{display:block;font-weight:800;font-size:12px;color:#075b35;margin-bottom:6px}.linha-share-message textarea{width:100%;min-height:150px;resize:none;border:1px solid #cfdad1;border-radius:10px;padding:11px;box-sizing:border-box;font:15px/1.45 Arial;background:#f8faf8}.linha-share-actions{display:grid;grid-template-columns:1fr;gap:8px;margin-top:9px}.linha-share-actions button{width:100%}@media(max-width:650px){.linha-share-body{grid-template-columns:1fr}.linha-share-preview{max-height:42vh}}
+</style>
 </head>
 <body>
 
@@ -274,21 +277,22 @@ window.addEventListener('unhandledrejection', function(e){
 
 <div id="linhaModal" class="linha-modal" aria-hidden="true">
  <div class="linha-modal-card">
-  <div class="linha-modal-head"><div><h2>➕ Cadastrar nova linha</h2><small>MOSTRUÁRIO • COM OU SEM VALORES</small></div><button class="secondary" type="button" onclick="fecharLinhaModal()">✕ Fechar</button></div>
+  <div class="linha-modal-head"><div><h2>➕ Cadastrar nova linha</h2><small>MOSTRUÁRIO • FOTOS COM PREÇOS POR FAIXA</small></div><button class="secondary" type="button" onclick="fecharLinhaModal()">✕ Fechar</button></div>
   <div class="linha-modal-body">
    <div class="linha-grid">
     <div><label>Título da linha</label><input id="linhaTitulo" placeholder="Ex.: PADARIA" autocomplete="off"></div>
-    <div><label>Modelo do produto</label><select id="linhaTipo"></select></div><div><label>Valor do modelo (R$)</label><input id="linhaValor" type="number" min="0" step="0.01" placeholder="Ex.: 39,90"></div>
+    <div><label>Modelo do produto</label><select id="linhaTipo"></select></div><div><label>Até 9 peças (R$)</label><input id="linhaValorAte9" type="number" min="0" step="0.01" placeholder="Ex.: 69,90"></div><div><label>A partir de 10 peças (R$)</label><input id="linhaValor10Mais" type="number" min="0" step="0.01" placeholder="Ex.: 59,90"></div>
    </div>
    <div class="linha-upload" style="margin-top:12px"><b>📷 Foto do modelo selecionado</b><div class="muted" style="margin:5px 0 9px">Adicione uma ou mais fotos para este modelo.</div><button class="secondary" type="button" onclick="adicionarFotoLinha()">📷 Adicionar foto</button><input id="linhaFotoInput" type="file" accept="image/jpeg,image/png,image/webp" multiple hidden></div>
    <div id="linhaFotosTemporarias" class="linha-model-list"></div>
    <div class="linha-row-actions"><button class="primary" type="button" onclick="adicionarModeloLinha()">➕ Adicionar modelo à linha</button><button class="secondary" type="button" onclick="salvarLinhaAtual()">💾 Salvar linha</button><button class="secondary" type="button" onclick="limparEditorLinha()">🧹 Limpar</button><button class="primary" type="button" onclick="exportarLinhaMostruario(false)">📤 Enviar Linha</button></div>
-   <div class="muted" style="margin-top:8px">Depois de <b>LINHA:</b> entra exatamente o título definido. O valor informado pertence ao modelo da linha e só aparece quando você usar <b>Enviar Linha com valores</b>.</div>
+   <div class="muted" style="margin-top:8px">Cada modelo pode ter dois valores: <b>até 9 peças</b> e <b>a partir de 10 peças</b>. Esses valores serão usados na mensagem de <b>Enviar Fotos com valores</b>.</div>
    <div class="linha-preview"><div class="linha-preview-title">LINHA: <span id="linhaPreviewTitulo">NOVA LINHA</span></div><div class="linha-preview-hero"><img id="linhaHeroImg" alt="Imagem principal da linha"><div class="linha-benefits"><div><b>PERSONALIZADO</b>Sua marca com qualidade profissional</div><div><b>CONFORTO</b>Tecidos adequados para cada modelo</div><div><b>ESTAMPAS</b>Personalização com identidade visual</div><div><b>RESISTÊNCIA</b>Acabamento para uso profissional</div><div><b>IDEAL PARA</b>Empresas, equipes e eventos</div></div></div><div id="linhaModelosPreview" class="linha-model-list"></div></div>
   </div>
  </div>
 </div>
 
+<div id="linhaShareValoresModal" class="linha-modal" aria-hidden="true"></div>
 <main>
 <div class="tabbar">
   <button id="tabOrcamento" class="tabbtn active" type="button" onclick="showTab('orcamento')">🧾 Orçamento</button>
@@ -3487,7 +3491,7 @@ function popularTiposLinha(){const s=document.getElementById('linhaTipo');if(!s)
 function abrirNovaLinha(){
   const m=document.getElementById('linhaModal');if(!m)return;
   linhaAtual={id:crypto.randomUUID(),titulo:'',modelos:[],criadoEm:new Date().toISOString(),atualizadoEm:new Date().toISOString()};linhaFotosTemporarias=[];
-  popularTiposLinha();document.getElementById('linhaTitulo').value='';document.getElementById('linhaValor').value='';document.getElementById('linhaFotoInput').value='';renderLinhaFotosTemp();renderLinhaPreview();m.classList.add('open');m.setAttribute('aria-hidden','false');setTimeout(()=>document.getElementById('linhaTitulo')?.focus(),30);
+  popularTiposLinha();document.getElementById('linhaTitulo').value='';document.getElementById('linhaValorAte9').value='';document.getElementById('linhaValor10Mais').value='';document.getElementById('linhaFotoInput').value='';renderLinhaFotosTemp();renderLinhaPreview();m.classList.add('open');m.setAttribute('aria-hidden','false');setTimeout(()=>document.getElementById('linhaTitulo')?.focus(),30);
 }
 function fecharLinhaModal(){const m=document.getElementById('linhaModal');if(m){m.classList.remove('open');m.setAttribute('aria-hidden','true');}}
 function limparEditorLinha(){if(!linhaAtual)return;linhaAtual.modelos=[];linhaFotosTemporarias=[];renderLinhaFotosTemp();renderLinhaPreview();}
@@ -3503,23 +3507,39 @@ function adicionarModeloLinha(){
   const tipo=document.getElementById('linhaTipo')?.value||'';
   if(!tipo){alert('Selecione o modelo do produto.');return;}
   if(!linhaFotosTemporarias.length){alert('Adicione pelo menos uma foto para este modelo.');return;}
-  const valorRaw=(document.getElementById('linhaValor')?.value||'').replace(',','.');
-  const valor=Number(valorRaw);
-  if(valorRaw!=='' && (!Number.isFinite(valor)||valor<0)){alert('Informe um valor válido para o modelo.');return;}
+  const ate9Raw=(document.getElementById('linhaValorAte9')?.value||'').replace(',','.').trim();
+  const dezRaw=(document.getElementById('linhaValor10Mais')?.value||'').replace(',','.').trim();
+  const ate9=ate9Raw===''?0:Number(ate9Raw),dez=dezRaw===''?0:Number(dezRaw);
+  if(!Number.isFinite(ate9)||ate9<0||!Number.isFinite(dez)||dez<0){alert('Informe valores válidos para as duas faixas de preço.');return;}
   linhaAtual.titulo=titulo;
-  linhaAtual.modelos.push({id:crypto.randomUUID(),tipo,valor:valorRaw===''?0:valor,especificacoes:[...(LINHAS_TYPES[tipo]||[])],fotos:linhaFotosTemporarias.map(x=>x.src)});
+  linhaAtual.modelos.push({id:crypto.randomUUID(),tipo,valor:ate9,valorAte9:ate9,valor10Mais:dez,especificacoes:[...(LINHAS_TYPES[tipo]||[])],fotos:linhaFotosTemporarias.map(x=>x.src)});
   linhaFotosTemporarias=[];
-  const ve=document.getElementById('linhaValor');if(ve)ve.value='';
+  const a=document.getElementById('linhaValorAte9'),b=document.getElementById('linhaValor10Mais');if(a)a.value='';if(b)b.value='';
   renderLinhaFotosTemp();renderLinhaPreview();
+}
+function precosModeloLinha(m){
+  const ate9=(m&&m.valorAte9!==undefined)?Number(m.valorAte9):Number(m?.valor||0);
+  const dez=(m&&m.valor10Mais!==undefined)?Number(m.valor10Mais):Number(m?.valor||0);
+  return {ate9:Number.isFinite(ate9)&&ate9>=0?ate9:0,dez:Number.isFinite(dez)&&dez>=0?dez:0};
 }
 function renderLinhaPreview(){
   const titulo=(document.getElementById('linhaTitulo')?.value||linhaAtual?.titulo||'NOVA LINHA').trim()||'NOVA LINHA';
   const t=document.getElementById('linhaPreviewTitulo');if(t)t.textContent=titulo;
   const hero=document.getElementById('linhaHeroImg'),modelos=document.getElementById('linhaModelosPreview');
   const ms=modelosOrdenadosLinha(linhaAtual?.modelos||[]);if(hero)hero.src=ms[0]?.fotos?.[0]||'';
-  if(modelos)modelos.innerHTML=ms.length?ms.map((m,i)=>`<article class="linha-model-card"><img src="${escAttr(m.fotos[0]||'')}" alt="${escAttr(m.tipo)}"><h4>${i+1}. ${esc(m.tipo)}</h4><p><b>Especificações</b><br>• ${(m.especificacoes||[]).map(esc).join('<br>• ')}</p><div class="linha-model-price"><label>Valor (R$)</label><input type="number" min="0" step="0.01" value="${Number(m.valor)||0}" onchange="atualizarValorModeloLinha('${m.id}',this.value)"></div><button class="secondary" type="button" style="width:100%;margin-top:7px;padding:7px" onclick="removerModeloLinha('${m.id}')">Remover</button></article>`).join(''):'<div class="linha-empty" style="grid-column:1/-1">Os modelos adicionados aparecerão aqui.</div>';
+  if(modelos)modelos.innerHTML=ms.length?ms.map((m,i)=>{const pr=precosModeloLinha(m);return `<article class="linha-model-card"><img src="${escAttr(m.fotos[0]||'')}" alt="${escAttr(m.tipo)}"><h4>${i+1}. ${esc(m.tipo)}</h4><p><b>Especificações</b><br>• ${(m.especificacoes||[]).map(esc).join('<br>• ')}</p><div class="linha-model-price"><label>Até 9 peças (R$)</label><input type="number" min="0" step="0.01" value="${pr.ate9.toFixed(2)}" onchange="atualizarPrecosModeloLinha('${m.id}',this.value,document.getElementById('linhaValor10MaisPreview_${m.id}')?.value)"><label style="margin-top:6px">A partir de 10 peças (R$)</label><input id="linhaValor10MaisPreview_${m.id}" type="number" min="0" step="0.01" value="${pr.dez.toFixed(2)}" onchange="atualizarPrecosModeloLinha('${m.id}',document.getElementById('linhaValorAte9Preview_${m.id}')?.value,this.value)"></div><input id="linhaValorAte9Preview_${m.id}" type="hidden" value="${pr.ate9.toFixed(2)}"><button class="secondary" type="button" style="width:100%;margin-top:7px;padding:7px" onclick="removerModeloLinha('${m.id}')">Remover</button></article>`;}).join(''):'<div class="linha-empty" style="grid-column:1/-1">Os modelos adicionados aparecerão aqui.</div>';
 }
-function atualizarValorModeloLinha(id,value){if(!linhaAtual)return;const v=Number(String(value??'').replace(',','.'));const m=(linhaAtual.modelos||[]).find(x=>String(x.id)===String(id));if(!m)return;m.valor=Number.isFinite(v)&&v>=0?v:0;linhaAtual.atualizadoEm=new Date().toISOString();}
+function atualizarPrecosModeloLinha(id,ate9Value,dezValue){
+  if(!linhaAtual)return;
+  const m=(linhaAtual.modelos||[]).find(x=>String(x.id)===String(id));if(!m)return;
+  const ate9=Number(String(ate9Value??'').replace(',','.')),dez=Number(String(dezValue??'').replace(',','.'));
+  m.valor=Number.isFinite(ate9)&&ate9>=0?ate9:0;m.valorAte9=m.valor;m.valor10Mais=Number.isFinite(dez)&&dez>=0?dez:0;
+  linhaAtual.atualizadoEm=new Date().toISOString();
+  renderLinhaPreview();
+}
+function atualizarValorModeloLinha(id,value){
+  atualizarPrecosModeloLinha(id,value,(linhaAtual?.modelos||[]).find(x=>String(x.id)===String(id))?.valor10Mais??value);
+}
 function removerModeloLinha(id){if(!linhaAtual)return;linhaAtual.modelos=linhaAtual.modelos.filter(m=>m.id!==id);renderLinhaPreview();}
 async function salvarLinhaAtual(){
   if(!linhaAtual)return;const titulo=(document.getElementById('linhaTitulo')?.value||linhaAtual.titulo||'').trim();if(!titulo){alert('Informe o título da linha.');return;}if(!linhaAtual.modelos.length){alert('Adicione pelo menos um modelo à linha.');return;}linhaAtual.titulo=titulo;linhaAtual.atualizadoEm=new Date().toISOString();await linhaPut(linhaAtual);if(sbSession){try{await salvarSnapshotBackupNuvem(await montarSnapshotBackup());cloudMsg('Linha salva e incluída no backup da nuvem.');}catch(e){console.warn('Backup da linha na nuvem:',e);cloudMsg('Linha salva neste aparelho; backup da nuvem pendente.');}}alert('Linha salva com sucesso.');renderLinhasAdmin();renderCatalogLinhas();
@@ -3546,8 +3566,9 @@ async function renderLinhasAdmin(){
           +'<div class="linha-row-actions">'
           +'<button class="secondary" type="button" onclick="editarLinhaSalva(\''+xId+'\')">✏️ Editar</button>'
           +'<button class="secondary" type="button" onclick="alternarCatalogoLinha(\''+xId+'\')">'+(xAtivo?'🙈 Ocultar do catálogo':'👁️ Mostrar no catálogo')+'</button>'
-          +'<button class="primary" type="button" onclick="enviarLinhaSalva(\''+xId+'\')">📤 Enviar Linha</button>'+'<button class="primary" type="button" onclick="enviarLinhaSalvaComValores(\''+xId+'\')">💰 Enviar Linha com valores</button>'
+          +'<button class="primary" type="button" onclick="enviarLinhaSalva(\''+xId+'\')">📤 Enviar Linha</button>'
           +'<button class="primary" type="button" onclick="enviarFotosLinhaSalva(\''+xId+'\')">📷 Enviar Fotos</button>'
+          +'<button class="primary" type="button" onclick="enviarFotosLinhaSalvaComValores(\''+xId+'\')">📷💰 Enviar Fotos com valores</button>'
           +'<button class="secondary" type="button" onclick="excluirLinhaSalva(\''+xId+'\')">🗑️ Excluir</button>'
           +'</div></div></article>';
       }).join('');
@@ -3586,7 +3607,35 @@ function linhaAdminPointerEnd(e){
   if(Math.abs(dx)>38&&Math.abs(dx)>Math.abs(dy)*1.1)moverLinhaAdmin(dx<0?1:-1,e);
 }
 function linhaAdminPointerCancel(e){linhaAdminPointer.active=false;e?.stopPropagation();}
-async function editarLinhaSalva(id){const l=await linhaGet(id);if(!l)return;linhaAtual=JSON.parse(JSON.stringify(l));linhaFotosTemporarias=[];popularTiposLinha();document.getElementById('linhaTitulo').value=l.titulo||'';document.getElementById('linhaValor').value='';renderLinhaFotosTemp();renderLinhaPreview();document.getElementById('linhaModal').classList.add('open');document.getElementById('linhaModal').setAttribute('aria-hidden','false');}
+async function editarLinhaSalva(id){const l=await linhaGet(id);if(!l)return;linhaAtual=JSON.parse(JSON.stringify(l));linhaFotosTemporarias=[];popularTiposLinha();document.getElementById('linhaTitulo').value=l.titulo||'';document.getElementById('linhaValorAte9').value='';document.getElementById('linhaValor10Mais').value='';renderLinhaFotosTemp();renderLinhaPreview();document.getElementById('linhaModal').classList.add('open');document.getElementById('linhaModal').setAttribute('aria-hidden','false');}
+function mensagemFotoLinhaComValores(linha,modelo){
+  const pr=precosModeloLinha(modelo);
+  const tipo=String(modelo?.tipo||'Modelo').trim();
+  const fmt=v=>Number(v||0).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});return `Uniforme ${tipo}\n\n${fmt(pr.ate9)} até 9 peças\n${fmt(pr.dez)} a partir de 10 peças`;
+}
+let filaFotosLinhaValores={linha:null,items:[],index:0};
+function fecharFilaFotosLinhaValores(){const m=document.getElementById('linhaShareValoresModal');if(m){m.classList.remove('open');m.setAttribute('aria-hidden','true');}}
+function renderFilaFotosLinhaValores(){
+  const modal=document.getElementById('linhaShareValoresModal');if(!modal)return;
+  const item=filaFotosLinhaValores.items[filaFotosLinhaValores.index];if(!item){fecharFilaFotosLinhaValores();return;}
+  const total=filaFotosLinhaValores.items.length,idx=filaFotosLinhaValores.index+1;
+  modal.innerHTML=`<div class="linha-share-card"><div class="linha-share-head"><div><h3 style="margin:0">📷 Enviar foto com valores</h3><small>Foto ${idx} de ${total}</small></div><button class="secondary" type="button" onclick="fecharFilaFotosLinhaValores()">✕ Fechar</button></div><div class="linha-share-body"><img src="${escAttr(item.src)}" alt="Foto ${idx}" class="linha-share-preview"><div class="linha-share-message"><label>Mensagem desta foto</label><textarea id="linhaShareMessage" readonly>${esc(item.message)}</textarea><div class="linha-share-actions"><button class="secondary" type="button" onclick="copiarMensagemFotoLinha()">📋 Copiar mensagem</button><button class="primary" type="button" onclick="compartilharFotoLinhaAtual()">📤 Compartilhar esta foto</button><button class="secondary" type="button" onclick="baixarFotoLinhaAtual()">⬇️ Baixar foto</button></div><button class="secondary" type="button" style="width:100%;margin-top:8px" onclick="proximaFotoLinhaValores()">${idx<total?'➡️ Próxima foto':'✅ Concluir'}</button></div></div></div>`;
+  modal.classList.add('open');modal.setAttribute('aria-hidden','false');
+}
+async function copiarMensagemFotoLinha(){const t=document.getElementById('linhaShareMessage');if(!t)return;try{await navigator.clipboard.writeText(t.value);alert('Mensagem copiada.');}catch(e){t.select();document.execCommand('copy');alert('Mensagem copiada.');}}
+async function compartilharFotoLinhaAtual(){
+  const item=filaFotosLinhaValores.items[filaFotosLinhaValores.index];if(!item)return;
+  try{
+    const blob=dataUrlToBlob(item.src);if(!blob)throw new Error('Não foi possível preparar esta foto.');
+    const mime=blob.type||'image/jpeg',ext=extFromMime(mime),file=new File([blob],item.nome.replace(/\.[^.]+$/,'')+'.'+ext,{type:mime,lastModified:Date.now()});
+    if(navigator.share && (!navigator.canShare || navigator.canShare({files:[file]}))){await navigator.share({title:`GIBIPRINTS — ${item.modelo}`,text:item.message,files:[file]});return;}
+    await copiarMensagemFotoLinha();
+    baixarFotoLinhaAtual();
+    alert('Seu navegador não permite compartilhar a foto diretamente. A foto foi baixada e a mensagem foi copiada.');
+  }catch(e){if(e?.name==='AbortError')return;console.error('Compartilhar foto com valores:',e);alert('Não foi possível compartilhar esta foto.\n\n'+(e?.message||e));}
+}
+function baixarFotoLinhaAtual(){const item=filaFotosLinhaValores.items[filaFotosLinhaValores.index];if(!item)return;const blob=dataUrlToBlob(item.src);if(!blob)return;const url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=item.nome;a.click();setTimeout(()=>URL.revokeObjectURL(url),1500);}
+function proximaFotoLinhaValores(){if(filaFotosLinhaValores.index<filaFotosLinhaValores.items.length-1){filaFotosLinhaValores.index++;renderFilaFotosLinhaValores();}else fecharFilaFotosLinhaValores();}
 async function enviarFotosLinhaSalva(id){
   const l=await linhaGet(id);if(!l)return;
   const fontes=[];
@@ -3595,32 +3644,24 @@ async function enviarFotosLinhaSalva(id){
   }
   if(!fontes.length){alert('Esta linha não possui fotos locais para enviar. Restaure o backup da nuvem primeiro.');return;}
   try{
-    const files=[];
-    for(const f of fontes){
-      const blob=dataUrlToBlob(f.src);if(!blob)continue;
-      const mime=blob.type||'image/jpeg';
-      const ext=extFromMime(mime);
-      files.push(new File([blob],String(f.nome).replace(/\.[^.]+$/,'')+'.'+ext,{type:mime,lastModified:Date.now()}));
-    }
+    const files=[];for(const f of fontes){const blob=dataUrlToBlob(f.src);if(!blob)continue;const mime=blob.type||'image/jpeg',ext=extFromMime(mime);files.push(new File([blob],String(f.nome).replace(/\.[^.]+$/,'')+'.'+ext,{type:mime,lastModified:Date.now()}));}
     if(!files.length)throw new Error('Não foi possível preparar as fotos para compartilhamento.');
     const shareData={title:`Fotos — ${l.titulo||'Linha'}`,text:`Fotos da linha ${l.titulo||''}`.trim(),files};
-    if(navigator.share && (!navigator.canShare || navigator.canShare({files}))){
-      await navigator.share(shareData);
-      return;
-    }
-    /* Fallback: baixa as fotos individualmente quando o navegador não oferece
-       compartilhamento de múltiplos arquivos. */
+    if(navigator.share && (!navigator.canShare || navigator.canShare({files}))){await navigator.share(shareData);return;}
     for(const file of files){const a=document.createElement('a');a.href=URL.createObjectURL(file);a.download=file.name;a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1500);}
-    alert(`O navegador não permite enviar ${files.length} fotos diretamente. As fotos foram preparadas para download; depois você pode anexá-las no WhatsApp.`);
-  }catch(e){
-    if(e?.name==='AbortError')return;
-    console.error('Enviar fotos da linha:',e);
-    alert('Não foi possível enviar as fotos da linha.\n\n'+(e?.message||e));
-  }
+    alert(`O navegador não permite enviar ${files.length} fotos diretamente. As fotos foram preparadas para download.`);
+  }catch(e){if(e?.name==='AbortError')return;console.error('Enviar fotos da linha:',e);alert('Não foi possível enviar as fotos da linha.\n\n'+(e?.message||e));}
 }
-
+async function enviarFotosLinhaSalvaComValores(id){
+  const l=await linhaGet(id);if(!l)return;
+  const fontes=[];
+  for(const m of (l.modelos||[]))for(let i=0;i<(m.fotos||[]).length;i++){
+    const src=m.fotos[i];if(typeof src==='string'&&src.startsWith('data:image/'))fontes.push({src,nome:`${l.titulo||'linha'}-${m.tipo||'modelo'}-${i+1}.jpg`,modelo:m.tipo||'Modelo',message:mensagemFotoLinhaComValores(l,m)});
+  }
+  if(!fontes.length){alert('Esta linha não possui fotos locais para enviar. Restaure o backup da nuvem primeiro.');return;}
+  filaFotosLinhaValores={linha:l,items:fontes,index:0};renderFilaFotosLinhaValores();
+}
 async function enviarLinhaSalva(id){const l=await linhaGet(id);if(!l)return;linhaAtual=JSON.parse(JSON.stringify(l));document.getElementById('linhaTitulo').value=l.titulo||'';renderLinhaPreview();await exportarLinhaMostruario(false);}
-async function enviarLinhaSalvaComValores(id){const l=await linhaGet(id);if(!l)return;linhaAtual=JSON.parse(JSON.stringify(l));document.getElementById('linhaTitulo').value=l.titulo||'';renderLinhaPreview();await exportarLinhaMostruario(true);}
 async function alternarCatalogoLinha(id){
   const l=await linhaGet(id);if(!l)return;
   l.catalogo_ativo=l.catalogo_ativo===false;
@@ -3642,7 +3683,7 @@ async function exportarLinhaMostruario(comValores=false){
   ctx.fillStyle='#075b35';round(55,220,1130,68,34);ctx.fillStyle='#fff';ctx.font='700 30px Arial';ctx.textAlign='center';ctx.fillText('LINHA: '+titulo.toUpperCase(),620,265);ctx.textAlign='left';
   const heroSrc=modelos[0]?.fotos?.[0]||'';const hero=await load(heroSrc);ctx.fillStyle='#fff';round(55,300,760,635,22);if(hero){const iw=740,ih=615,sc=Math.min(iw/hero.width,ih/hero.height),dw=hero.width*sc,dh=hero.height*sc;ctx.drawImage(hero,65+(iw-dw)/2,310+(ih-dh)/2,dw,dh);}else{ctx.fillStyle='#68756d';ctx.font='22px Arial';ctx.textAlign='center';ctx.fillText('Imagem não cadastrada',435,615);ctx.textAlign='left'}
   ctx.fillStyle='#fff';round(835,300,350,635,22);const bs=[['PERSONALIZADO','Sua marca com qualidade profissional'],['CONFORTO','Tecidos adequados para cada modelo'],['ESTAMPAS','Personalização com identidade visual'],['RESISTÊNCIA','Acabamento para uso profissional'],['IDEAL PARA','Empresas, equipes e eventos']];let by=355;bs.forEach(b=>{ctx.fillStyle='#075b35';ctx.font='700 18px Arial';ctx.fillText(b[0],862,by);ctx.fillStyle='#28352d';ctx.font='15px Arial';ctx.fillText(b[1],862,by+24);by+=112;});
-  const show=modelos.slice(0,5),gap=12,cw=(1130-gap*4)/5,y=965;for(let i=0;i<show.length;i++){const m=show[i],x=55+i*(cw+gap);ctx.fillStyle='#fff';round(x,y,cw,625,17);const im=await load(m.fotos?.[0]);if(im){const iw=cw-18,ih=250,sc=Math.min(iw/im.width,ih/im.height),dw=im.width*sc,dh=im.height*sc;ctx.drawImage(im,x+9+(iw-dw)/2,y+9+(ih-dh)/2,dw,dh);}ctx.fillStyle='#075b35';ctx.font='700 14px Arial';ctx.fillText((i+1)+'. '+m.tipo,x+10,y+292);if(comValores){ctx.fillStyle='#075b35';ctx.font='700 13px Arial';ctx.fillText('Valor: '+money(Number(m.valor)||0),x+10,y+314);}ctx.fillStyle='#27332c';ctx.font='11px Arial';ctx.fillText('Especificações',x+10,y+320);(m.especificacoes||[]).slice(0,5).forEach((t,j)=>ctx.fillText('• '+t,x+10,y+343+j*22));}
+  const show=modelos.slice(0,5),gap=12,cw=(1130-gap*4)/5,y=965;for(let i=0;i<show.length;i++){const m=show[i],x=55+i*(cw+gap);ctx.fillStyle='#fff';round(x,y,cw,625,17);const im=await load(m.fotos?.[0]);if(im){const iw=cw-18,ih=250,sc=Math.min(iw/im.width,ih/im.height),dw=im.width*sc,dh=im.height*sc;ctx.drawImage(im,x+9+(iw-dw)/2,y+9+(ih-dh)/2,dw,dh);}ctx.fillStyle='#075b35';ctx.font='700 14px Arial';ctx.fillText((i+1)+'. '+m.tipo,x+10,y+292);if(comValores){ctx.fillStyle='#075b35';ctx.font='700 13px Arial';const pr=precosModeloLinha(m);ctx.fillText(money(pr.ate9)+' até 9 peças',x+10,y+314);ctx.fillText(money(pr.dez)+' a partir de 10 peças',x+10,y+332);}ctx.fillStyle='#27332c';ctx.font='11px Arial';ctx.fillText('Especificações',x+10,y+320);(m.especificacoes||[]).slice(0,5).forEach((t,j)=>ctx.fillText('• '+t,x+10,y+343+j*22));}
   ctx.fillStyle='#062519';ctx.fillRect(0,1690,W,64);ctx.fillStyle='#fff';ctx.font='700 17px Arial';ctx.textAlign='center';ctx.fillText('WhatsApp (21) 98251-1405   |   Instagram @GIBIPRINTS   |   Benfica — Rio de Janeiro',620,1730);ctx.textAlign='left';
   const blob=await new Promise((res,rej)=>canvas.toBlob(b=>b?res(b):rej(new Error('Não foi possível criar o JPG.')),'image/jpeg',.95));const safe=titulo.replace(/[^a-z0-9]+/gi,'_').replace(/^_|_$/g,'')||'Linha';const file=new File([blob],`GIBIPRINTS_Linha_${safe}.jpg`,{type:'image/jpeg'});
   try{if(navigator.share&&navigator.canShare&&navigator.canShare({files:[file]})){await navigator.share({title:`GIBIPRINTS — Linha ${titulo}`,text:`Mostruário: ${titulo} — sem valores`,files:[file]});return;}}catch(e){}const url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=file.name;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),3000);

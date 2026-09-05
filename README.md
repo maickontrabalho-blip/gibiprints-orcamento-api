@@ -1,3 +1,18 @@
+GIBIPRINTS — V26
+
+Esta versão mantém a base da V25 e corrige o fluxo de envio de fotos das linhas com valores.
+
+- Cada modelo de linha possui preço até 9 peças e preço a partir de 10 peças.
+- O botão é “📷💰 Enviar Fotos com valores”.
+- Cada foto é compartilhada individualmente com sua própria mensagem:
+  Uniforme Gola Polo Masculino
+
+  69,90 até 9 peças
+  59,90 a partir de 10 peças
+- O compartilhamento usa a folha nativa do Android/navegador quando disponível.
+- Se o navegador não puder compartilhar arquivo + texto, a foto é baixada e a mensagem é copiada.
+- O botão “📤 Enviar Linha” continua sem valores.
+
 # GIBIPRINTS V22
 
 Correção do envio do catálogo para a nuvem:
