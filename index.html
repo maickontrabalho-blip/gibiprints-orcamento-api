@@ -1429,7 +1429,7 @@ async function sincronizarMidiasBackupNuvem(){
      const nome=path.split('/').pop();
      if(arquivosExistentes.has(nome)){
        uploadResults.set(item.hash,{path,blob:item.blob,jaExistia:true});
-       return;
+       continue;
      }
      const up=await uploadStorageComRetry(path,item.blob,{contentType:'image/jpeg',upsert:false,cacheControl:'31536000'},2);
      if(up.error&&!/already exists/i.test(up.error.message||''))throw new Error(`Mídia ${item.hash}: ${up.error.message||'falha no upload'}`);
