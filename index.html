@@ -101,6 +101,18 @@ table{width:100%;border-collapse:collapse}th,td{padding:7px;border-bottom:1px so
 
 .linha-share-all-values{width:100%;margin-top:10px;border:0;border-radius:14px;padding:15px 16px;background:#7a1f2b;color:#fff;font-weight:900;font-size:16px;letter-spacing:.2px;cursor:pointer;box-shadow:0 2px 0 rgba(0,0,0,.08)}
 .linha-share-all-values:active{transform:translateY(1px)}
+
+.foto-sessoes-modal{position:fixed;inset:0;background:rgba(3,20,12,.68);z-index:10020;display:none;align-items:center;justify-content:center;padding:14px;overflow:auto}
+.foto-sessoes-modal.open{display:flex}
+.foto-sessoes-card{width:min(560px,100%);max-height:92vh;overflow:auto;background:#fff;border-radius:20px;box-shadow:0 24px 70px rgba(0,0,0,.28);padding:18px}
+.foto-sessoes-head{display:flex;justify-content:space-between;gap:12px;align-items:flex-start;margin-bottom:14px}
+.foto-sessoes-head h3{margin:0;color:#062519;font-size:21px}
+.foto-sessoes-head p{margin:5px 0 0;color:#68756d;font-size:13px}
+.foto-sessoes-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.foto-sessao-btn{border:1px solid #d5dfd8;background:#f7faf7;border-radius:14px;padding:14px;text-align:left;cursor:pointer;font-weight:800;color:#075b35;min-height:76px}
+.foto-sessao-btn strong{display:block;font-size:15px}.foto-sessao-btn span{display:block;margin-top:4px;font-size:12px;color:#68756d;font-weight:700}.foto-sessao-btn.sent{background:#eaf3ed;border-color:#8db59b;color:#075b35}
+.foto-sessoes-info{margin-top:13px;padding:11px 12px;border-radius:12px;background:#f4f7f4;color:#526057;font-size:12px;line-height:1.45}
+@media(max-width:500px){.foto-sessoes-grid{grid-template-columns:1fr}.foto-sessoes-card{padding:15px}}
 </style>
 
 <link rel="manifest" href="manifest.json">
@@ -296,6 +308,7 @@ window.addEventListener('unhandledrejection', function(e){
 </div>
 
 <div id="linhaShareValoresModal" class="linha-modal" aria-hidden="true"></div>
+<div id="fotoSessoesModal" class="foto-sessoes-modal" aria-hidden="true"></div>
 <main>
 <div class="tabbar">
   <button id="tabOrcamento" class="tabbtn active" type="button" onclick="showTab('orcamento')">🧾 Orçamento</button>
@@ -3171,7 +3184,7 @@ async function enviarFotosProdutoCatalogo(idx){
     const d=await hydrateCatalogPhotos(await sincronizarCatalogoComProdutos());
     const p=d.produtos?.[Number(idx)];
     if(!p){alert('Produto não encontrado na aba Produtos.');return;}
-    const fontes=(p.fotos||[]).filter(Boolean).slice(0,30);
+    const fontes=(p.fotos||[]).filter(Boolean).slice(0,50);
     if(!fontes.length){alert(`O produto "${p.nome||'Produto'}" não possui fotos cadastradas.`);return;}
     const files=[];
     for(let i=0;i<fontes.length;i++){
@@ -3183,22 +3196,14 @@ async function enviarFotosProdutoCatalogo(idx){
       files.push(new File([blob],`${nomeBase} - Foto ${i+1}.${ext}`,{type:mime,lastModified:Date.now()}));
     }
     if(!files.length)throw new Error('Não foi possível preparar as fotos para compartilhamento.');
-    const shareData={title:`Fotos — ${p.nome||'Produto'}`,text:`Fotos do produto ${p.nome||''}`.trim(),files};
-    if(navigator.share && (!navigator.canShare || navigator.canShare({files}))){
-      await navigator.share(shareData);
-      return;
-    }
-    for(const file of files){
-      const url=URL.createObjectURL(file);const a=document.createElement('a');a.href=url;a.download=file.name;a.click();setTimeout(()=>URL.revokeObjectURL(url),1500);
-    }
-    alert(`O navegador não permite compartilhar ${files.length} fotos diretamente. As fotos foram preparadas para download; depois você pode anexá-las no WhatsApp.`);
+    const text=`Fotos do produto ${p.nome||''}`.trim();
+    await compartilharArquivosEmSessoes({title:`Fotos — ${p.nome||'Produto'}`,text,files});
   }catch(e){
     if(e?.name==='AbortError')return;
     console.error('Enviar fotos do produto:',e);
     alert('Não foi possível enviar as fotos do produto.\n\n'+(e?.message||e));
   }
 }
-
 async function exportarProdutoCatalogoJPG(p){
   const W=1240,H=1754,scale=2;
   const canvas=document.createElement('canvas');canvas.width=W*scale;canvas.height=H*scale;
@@ -3644,26 +3649,24 @@ async function compartilharTodasFotosLinhaValores(){
   const items=filaFotosLinhaValores.items||[];
   if(!items.length)return;
   try{
-    for(let i=filaFotosLinhaValores.index;i<items.length;i++){
-      filaFotosLinhaValores.index=i;
-      renderFilaFotosLinhaValores();
-      const item=items[i];
-      const blob=dataUrlToBlob(item.src);
-      if(!blob)throw new Error(`Não foi possível preparar a foto ${i+1}.`);
+    const files=[];
+    for(let i=0;i<items.length;i++){
+      const item=items[i],blob=dataUrlToBlob(item.src);
+      if(!blob)continue;
       const mime=blob.type||'image/jpeg',ext=extFromMime(mime);
-      const file=new File([blob],String(item.nome).replace(/\.[^.]+$/,'')+'.'+ext,{type:mime,lastModified:Date.now()});
-      if(!(navigator.share && (!navigator.canShare || navigator.canShare({files:[file]})))){
-        await copiarMensagemFotoLinha();
-        baixarFotoLinhaAtual();
-        continue;
-      }
-      await navigator.share({title:`GIBIPRINTS — ${item.modelo}`,text:item.message,files:[file]});
+      files.push({file:new File([blob],String(item.nome).replace(/\.[^.]+$/,'')+'.'+ext,{type:mime,lastModified:Date.now()}),index:i,item});
     }
-    fecharFilaFotosLinhaValores();
+    if(!files.length)throw new Error('Não foi possível preparar as fotos para compartilhamento.');
+    await compartilharArquivosEmSessoes({
+      title:`GIBIPRINTS — ${filaFotosLinhaValores.linha?.titulo||'Linha'}`,
+      text:items[0]?.message||'',
+      files:files.map(x=>x.file),
+      firstTextOnly:true
+    });
   }catch(e){
     if(e?.name==='AbortError')return;
     console.error('Enviar todas as fotos com valores:',e);
-    alert('O compartilhamento foi interrompido. Você pode continuar pela foto atual.\n\n'+(e?.message||e));
+    alert('Não foi possível abrir as sessões de compartilhamento.\n\n'+(e?.message||e));
   }
 }
 async function enviarFotosLinhaSalva(id){
@@ -3674,13 +3677,50 @@ async function enviarFotosLinhaSalva(id){
   }
   if(!fontes.length){alert('Esta linha não possui fotos locais para enviar. Restaure o backup da nuvem primeiro.');return;}
   try{
-    const files=[];for(const f of fontes){const blob=dataUrlToBlob(f.src);if(!blob)continue;const mime=blob.type||'image/jpeg',ext=extFromMime(mime);files.push(new File([blob],String(f.nome).replace(/\.[^.]+$/,'')+'.'+ext,{type:mime,lastModified:Date.now()}));}
+    const files=[];
+    for(const f of fontes){const blob=dataUrlToBlob(f.src);if(!blob)continue;const mime=blob.type||'image/jpeg',ext=extFromMime(mime);files.push(new File([blob],String(f.nome).replace(/\.[^.]+$/,'')+'.'+ext,{type:mime,lastModified:Date.now()}));}
     if(!files.length)throw new Error('Não foi possível preparar as fotos para compartilhamento.');
-    const shareData={title:`Fotos — ${l.titulo||'Linha'}`,text:`Fotos da linha ${l.titulo||''}`.trim(),files};
-    if(navigator.share && (!navigator.canShare || navigator.canShare({files}))){await navigator.share(shareData);return;}
-    for(const file of files){const a=document.createElement('a');a.href=URL.createObjectURL(file);a.download=file.name;a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1500);}
-    alert(`O navegador não permite enviar ${files.length} fotos diretamente. As fotos foram preparadas para download.`);
+    await compartilharArquivosEmSessoes({title:`Fotos — ${l.titulo||'Linha'}`,text:`Fotos da linha ${l.titulo||''}`.trim(),files});
   }catch(e){if(e?.name==='AbortError')return;console.error('Enviar fotos da linha:',e);alert('Não foi possível enviar as fotos da linha.\n\n'+(e?.message||e));}
+}
+let filaCompartilhamentoSessoes={title:'',text:'',files:[],sessions:[],sent:new Set(),firstTextOnly:false};
+function fecharSessoesCompartilhamento(){const m=document.getElementById('fotoSessoesModal');if(m){m.classList.remove('open');m.setAttribute('aria-hidden','true');m.innerHTML='';}filaCompartilhamentoSessoes={title:'',text:'',files:[],sessions:[],sent:new Set(),firstTextOnly:false};}
+function renderSessoesCompartilhamento(){
+  const m=document.getElementById('fotoSessoesModal');if(!m)return;
+  const s=filaCompartilhamentoSessoes, total=s.sessions.length;
+  m.innerHTML=`<div class="foto-sessoes-card"><div class="foto-sessoes-head"><div><h3>📷 Enviar fotos por sessões</h3><p>${esc(s.title)} • ${s.files.length} fotos • máximo de 10 por sessão</p></div><button class="secondary" type="button" onclick="fecharSessoesCompartilhamento()">✕ Fechar</button></div><div class="foto-sessoes-grid">${s.sessions.map((x,i)=>{const sent=s.sent.has(i);return `<button class="foto-sessao-btn ${sent?'sent':''}" type="button" onclick="compartilharSessaoFotos(${i})"><strong>${sent?'✓ ':''}Sessão ${i+1}</strong><span>Fotos ${x.start+1} a ${x.end} • ${x.count} ${x.count===1?'foto':'fotos'}</span></button>`;}).join('')}</div><div class="foto-sessoes-info">Cada sessão abre um único compartilhamento com até 10 fotos. Escolha a sessão que deseja enviar; você pode enviar na ordem que quiser.</div></div>`;
+  m.classList.add('open');m.setAttribute('aria-hidden','false');
+}
+async function compartilharArquivosEmSessoes({title,text='',files=[],firstTextOnly=false}){
+  if(!files.length)return;
+  if(files.length<=10){
+    const shareData={title,text,files};
+    if(navigator.share && (!navigator.canShare || navigator.canShare({files}))){await navigator.share(shareData);return;}
+    for(const file of files){const url=URL.createObjectURL(file),a=document.createElement('a');a.href=url;a.download=file.name;a.click();setTimeout(()=>URL.revokeObjectURL(url),1500);}
+    alert(`O navegador não permite compartilhar ${files.length} fotos diretamente. As fotos foram preparadas para download.`);return;
+  }
+  const sessions=[];for(let start=0;start<files.length;start+=10){const end=Math.min(start+10,files.length);sessions.push({start,end,count:end-start});}
+  filaCompartilhamentoSessoes={title,text,files,sessions,sent:new Set(),firstTextOnly};
+  renderSessoesCompartilhamento();
+}
+async function compartilharSessaoFotos(sessionIndex){
+  const s=filaCompartilhamentoSessoes,x=s.sessions?.[sessionIndex];if(!x)return;
+  const files=s.files.slice(x.start,x.end);if(!files.length)return;
+  const shareText=(s.firstTextOnly&&sessionIndex>0)?'':s.text;
+  try{
+    if(navigator.share && (!navigator.canShare || navigator.canShare({files}))){
+      await navigator.share({title:s.title,text:shareText,files});
+      s.sent.add(sessionIndex);renderSessoesCompartilhamento();
+      return;
+    }
+    for(const file of files){const url=URL.createObjectURL(file),a=document.createElement('a');a.href=url;a.download=file.name;a.click();setTimeout(()=>URL.revokeObjectURL(url),1500);}
+    s.sent.add(sessionIndex);renderSessoesCompartilhamento();
+    alert(`A Sessão ${sessionIndex+1} foi preparada para download.`);
+  }catch(e){
+    if(e?.name==='AbortError')return;
+    console.error(`Compartilhar sessão ${sessionIndex+1}:`,e);
+    alert(`Não foi possível enviar a Sessão ${sessionIndex+1}.\n\n${e?.message||e}`);
+  }
 }
 async function enviarFotosLinhaSalvaComValores(id){
   const l=await linhaGet(id);if(!l)return;
