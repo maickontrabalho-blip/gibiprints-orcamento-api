@@ -701,24 +701,33 @@ async function sincronizarFotosProdutoSupabase(produto, cloudProdutoId, onProgre
   if(!sbSession)throw new Error('Faça login na nuvem antes de sincronizar fotos.');
   const ids=Array.isArray(produto?.fotoIds)?produto.fotoIds.slice(0,30):[];
   if(!ids.length)return {novas:0,existentes:0};
-  let novas=0,existentes=0;
-  for(let i=0;i<ids.length;i++){
+  let novas=0,existentes=0,concluidas=0;
+  // V38: uma única consulta ao banco para o produto e até 4 processamentos/upload em paralelo.
+  // Antes havia uma consulta ao Supabase para cada foto e tudo era sequencial.
+  const {data:rows,error:rowsError}=await sbClient.from('catalogo_fotos').select('id,storage_path,public_url,content_hash').eq('produto_id',cloudProdutoId).limit(100);
+  if(rowsError)throw new Error(`Fotos do produto: ${rowsError.message||'erro ao consultar fotos existentes.'}`);
+  const hashesExistentes=new Set((rows||[]).map(r=>String(r.content_hash||'')).filter(Boolean));
+  const processar=async(i)=>{
     const id=ids[i];
     const rec=await catalogGet(CATALOG_PHOTO_STORE,id).catch(()=>null);
     const original=dataUrlToBlob(rec?.data||'');
-    if(!original)continue;
+    if(!original){concluidas++;onProgress?.(concluidas,ids.length,novas,existentes);return;}
     const blob=await prepararImagemLinhaUpload(original,1280,0.72);
     const hash=await sha256Hex(blob);
-    const {data:ja}=await sbClient.from('catalogo_fotos').select('id,storage_path,public_url').eq('produto_id',cloudProdutoId).eq('content_hash',hash).maybeSingle();
-    if(ja){existentes++;onProgress?.(i+1,ids.length,novas,existentes);continue;}
+    if(hashesExistentes.has(hash)){
+      existentes++;concluidas++;onProgress?.(concluidas,ids.length,novas,existentes);return;
+    }
     const ext='jpg',path=`produtos/${cloudProdutoId}/${hash}.${ext}`;
     const up=await uploadStorageComRetry(path,blob,{contentType:'image/jpeg',upsert:false,cacheControl:'31536000'},3);
     if(up.error && !/already exists|asset already exists/i.test(up.error.message||''))throw new Error(`Foto ${i+1}: ${up.error.message||'falha no upload'}`);
     const pub=sbClient.storage.from(CATALOG_SUPABASE_BUCKET).getPublicUrl(path).data.publicUrl;
     const ins=await sbClient.from('catalogo_fotos').insert({produto_id:cloudProdutoId,storage_path:path,public_url:pub,content_hash:hash,ordem:i,nome_arquivo:`foto-${String(i+1).padStart(2,'0')}.${ext}`,mime_type:'image/jpeg',tamanho_bytes:blob.size,ativo:true}).select('id').maybeSingle();
     if(ins.error && !/duplicate|unique/i.test(ins.error.message||''))throw new Error(`Registro da foto ${i+1}: ${ins.error.message}`);
-    novas++; onProgress?.(i+1,ids.length,novas,existentes);
-  }
+    hashesExistentes.add(hash);novas++;concluidas++;onProgress?.(concluidas,ids.length,novas,existentes);
+  };
+  let cursor=0;
+  async function worker(){while(true){const i=cursor++;if(i>=ids.length)return;await processar(i);}}
+  await Promise.all(Array.from({length:Math.min(4,ids.length)},()=>worker()));
   return {novas,existentes};
 }
 
@@ -866,68 +875,52 @@ async function sincronizarFotosLinhaSupabase(linha,onProgress){
     existentesPorPasta.set(modelo.id,await listarArquivosStorage(prefix));
   }
   let concluidas=0,novas=0,existentes=0;
-  // V24: uploads de linha são sequenciais. Isso reduz pressão no Storage/gateway e
-  // torna o diagnóstico determinístico: sabemos exatamente qual foto falhou.
-  for(const task of tarefas){
+  // V38: até 4 fotos processadas/uploadadas em paralelo. Mantemos a ordem nas referências.
+  const processarTask=async(task)=>{
     const label=`${linha.titulo||linha.id} / ${task.modelo.tipo||task.modelo.id} / foto ${task.i+1}`;
     try{
       uploadDebug('FOTO DE LINHA ENCONTRADA', {label,srcType:typeof task.src,srcLength:String(task.src||'').length});
       const original=dataUrlToBlob(task.src);
-      if(!original){
-        uploadDebug('FOTO INVALIDA OU VAZIA', label);
-        throw new Error(`Foto da linha não pôde ser lida como imagem: ${label}`);
-      }
-      uploadDebug('BLOB ORIGINAL', {label,size:original.size,type:original.type});
+      if(!original)throw new Error(`Foto da linha não pôde ser lida como imagem: ${label}`);
       let blob=await prepararImagemLinhaUpload(original,1280,0.72);
       let hash=await sha256Hex(blob),ext='jpg',path=`linhas/${linha.id}/${task.modelo.id}/${hash}.${ext}`;
       let nomeArquivo=path.split('/').pop();
       let existe=existentesPorPasta.get(task.modelo.id)?.has(nomeArquivo);
       uploadDebug('ARQUIVO PREPARADO', {label,size:blob.size,hash,path,existe});
       if(!existe){
-        cloudMsg(`☁️ Enviando ${label} • ${concluidas+1}/${tarefas.length}`);
+        cloudMsg(`☁️ ${linha.titulo||''}: foto ${concluidas+1}/${tarefas.length}`);
         let up=await uploadStorageComRetry(path,blob,{contentType:'image/jpeg',upsert:false,cacheControl:'31536000'},3);
         uploadDebug('RESULTADO TUS 1280', {label,up});
         if(up.error && !/already exists|asset already exists/i.test(up.error.message||'')){
-          // Segunda chance: cópia ainda menor, mantendo a original local intacta.
-          uploadDebug('SEGUNDA TENTATIVA MENOR', {label,error:up.error?.message||up.error});
           blob=await prepararImagemLinhaUpload(original,960,0.58);
           hash=await sha256Hex(blob);path=`linhas/${linha.id}/${task.modelo.id}/${hash}.jpg`;nomeArquivo=path.split('/').pop();
           up=await uploadStorageComRetry(path,blob,{contentType:'image/jpeg',upsert:false,cacheControl:'31536000'},3);
           uploadDebug('RESULTADO TUS 960', {label,up});
         }
-        if(up.error && !/already exists|asset already exists/i.test(up.error.message||'')){
-          throw new Error(`${label}: ${up.error.message||'falha no upload'}`);
-        }
-        if(up.error)existente=true;
-        else {
-          novas++;
-          existentesPorPasta.get(task.modelo.id)?.add(nomeArquivo);
-        }
-      }else{
-        existentes++;
-      }
+        if(up.error && !/already exists|asset already exists/i.test(up.error.message||''))throw new Error(`${label}: ${up.error.message||'falha no upload'}`);
+        if(up.error)existente=true; else {novas++;existentesPorPasta.get(task.modelo.id)?.add(nomeArquivo);}
+      }else{existentes++;}
       const pub=sbClient.storage.from(CATALOG_SUPABASE_BUCKET).getPublicUrl(path).data.publicUrl;
       if(!pub)throw new Error(`${label}: o Storage não retornou URL pública.`);
       const ref={storage_path:path,public_url:pub,content_hash:hash,mime_type:'image/jpeg',ordem:task.i,tamanho_bytes:blob.size};
       refsByModel.get(task.modelo.id).push(ref);
       uploadDebug('REFERENCIA GERADA', {label,ref});
-      concluidas++;
-      onProgress?.(concluidas,tarefas.length,novas,existentes);
-    }catch(e){
-      uploadDebug('ERRO DEFINITIVO NA FOTO DA LINHA', {label,error:e?.message||e,stack:e?.stack});
-      throw e;
-    }
-  }
+      concluidas++;onProgress?.(concluidas,tarefas.length,novas,existentes);
+    }catch(e){uploadDebug('ERRO DEFINITIVO NA FOTO DE LINHA', {label,error:e?.message||e,stack:e?.stack});throw e;}
+  };
+  let cursorTarefa=0;
+  async function workerLinha(){while(true){const i=cursorTarefa++;if(i>=tarefas.length)return;await processarTask(tarefas[i]);}}
+  await Promise.all(Array.from({length:Math.min(4,tarefas.length)},()=>workerLinha()));
   uploadDebug('LINHA CONCLUIDA', {linha:linha?.titulo,concluidas,total:tarefas.length,novas,existentes});
   return modelos.map(m=>({modelId:m.id,fotos:(refsByModel.get(m.id)||[]).sort((a,b)=>Number(a.ordem)-Number(b.ordem))}));
 }
 
-async function prepararSnapshotNuvem(snapshot){
+async function prepararSnapshotNuvem(snapshot,midiaLocal=null){
  const out=JSON.parse(JSON.stringify(snapshot||{}));
  /* As fotos das linhas agora são enviadas pelo fluxo de sincronização do catálogo
     diretamente para Storage/linhas/. O snapshot apenas registra essas referências;
     assim não fazemos um segundo upload desnecessário para backup-midia/. */
- const midia=await sincronizarMidiasBackupNuvem();
+ const midia=await sincronizarMidiasBackupNuvem(midiaLocal);
  const manifest=Array.isArray(midia.manifest)?midia.manifest:[];
  const linhas=Array.isArray(out.linhas)?out.linhas:[];
  const compactas=linhas.map(linha=>{
@@ -1399,9 +1392,12 @@ async function coletarMidiasLocaisBackup(){
  const itens=[];
  const add=async(src,origem,meta={})=>{
    if(!src||typeof src!=='string'||!src.startsWith('data:image/'))return;
-   const blob=dataUrlToBlob(src);if(!blob)return;
+   const blobOriginal=dataUrlToBlob(src);if(!blobOriginal)return;
+   // V38: prepara a cópia de nuvem uma única vez. Antes o backup convertia
+   // e calculava o hash da mesma imagem novamente dentro do upload.
+   const blob=await prepararImagemLinhaUpload(blobOriginal,1600,0.80);
    const hash=await sha256Hex(blob);
-   itens.push({hash,origem,mime_type:blob.type||'image/jpeg',tamanho_bytes:blob.size,blob,...meta});
+   itens.push({hash,origem,mime_type:'image/jpeg',tamanho_bytes:blob.size,blob,...meta});
  };
  try{
    for(const rec of await catalogGetAllPhotos()){
@@ -1415,8 +1411,6 @@ async function coletarMidiasLocaisBackup(){
      for(const m of (l.modelos||[])){
        const fotos=Array.isArray(m.fotos)?m.fotos:[];
        const remotas=Array.isArray(m.fotosRemotas)?m.fotosRemotas:[];
-       /* Se todas as fotos já possuem referência remota, elas já foram enviadas
-          para Storage/linhas/ e não precisam ser copiadas novamente para backup-midia/. */
        if(fotos.length && remotas.length>=fotos.length)continue;
        for(let i=0;i<fotos.length;i++){
          await add(fotos[i],`linha:${l.id}:${m.id}:${i}`,{
@@ -1434,8 +1428,8 @@ async function coletarMidiasLocaisBackup(){
    Produtos e Linhas agora carregam seus próprios identificadores no manifesto,
    permitindo que a restauração reconstrua as fotos no aparelho. O upload evita
    consultas/upload repetidos para arquivos que já existem no Storage. */
-async function sincronizarMidiasBackupNuvem(){
- const itens=await coletarMidiasLocaisBackup();
+async function sincronizarMidiasBackupNuvem(midiaLocal=null){
+ const itens=Array.isArray(midiaLocal)?midiaLocal:await coletarMidiasLocaisBackup();
  if(!sbSession)return {total:itens.length,novas:0,existentes:itens.length,manifest:itens.map(x=>({hash:x.hash,origem:x.origem,tipo:x.tipo,produtoId:x.produtoId||'',photoId:x.photoId||'',linhaId:x.linhaId||'',modeloId:x.modeloId||'',ordem:Number(x.ordem||0),mime_type:x.mime_type,tamanho_bytes:x.tamanho_bytes}))};
  const manifest=new Array(itens.length);
  let novas=0,existentes=0;
@@ -1445,12 +1439,10 @@ async function sincronizarMidiasBackupNuvem(){
    if(!r.error)arquivosExistentes=new Set((r.data||[]).map(x=>String(x.name||'')));
  }catch(e){console.warn('Lista do Storage de backup:',e);}
  const porHash=new Map();
- for(let i=0;i<itens.length;i++){
-   const item=itens[i];
-   const original=await prepararImagemLinhaUpload(item.blob,1600,0.80);
-   const hash=await sha256Hex(original);
-   if(!porHash.has(hash))porHash.set(hash,{blob:original,hash});
-   item.__uploadHash=hash; item.__uploadBlob=original;
+ for(const item of itens){
+   // V38: a imagem já vem preparada e com hash calculado do inventário.
+   if(!porHash.has(item.hash))porHash.set(item.hash,{blob:item.blob,hash:item.hash});
+   item.__uploadHash=item.hash; item.__uploadBlob=item.blob;
  }
  const uploadResults=new Map();
  const uniqueUploads=[...porHash.values()];
@@ -1516,12 +1508,15 @@ async function montarSnapshotBackup(){
  let linhas=[];
  try{linhas=await linhaAll();}catch(e){console.warn('Backup das linhas:',e);}
  const midiaLocal=await coletarMidiasLocaisBackup();
- return {versao:4,tipo:'GIBIPRINTS_CLOUD_BACKUP',backupId:CLOUD_BACKUP_SYNC_ID,exportadoEm:new Date().toISOString(),clientes,pedidos,produtos,productMeta:meta,linhas,midia:{total:midiaLocal.length,manifest:midiaLocal.map(x=>({hash:x.hash,origem:x.origem,mime_type:x.mime_type,tamanho_bytes:x.tamanho_bytes}))}};
+ const snapshot={versao:4,tipo:'GIBIPRINTS_CLOUD_BACKUP',backupId:CLOUD_BACKUP_SYNC_ID,exportadoEm:new Date().toISOString(),clientes,pedidos,produtos,productMeta:meta,linhas,midia:{total:midiaLocal.length,manifest:midiaLocal.map(x=>({hash:x.hash,origem:x.origem,mime_type:x.mime_type,tamanho_bytes:x.tamanho_bytes}))}};
+ // V38: evita reconstruir/redimensionar/hashar todas as imagens pela segunda vez.
+ Object.defineProperty(snapshot,'__midiaLocal',{value:midiaLocal,enumerable:false,configurable:true});
+ return snapshot;
 }
 
 async function salvarSnapshotBackupNuvem(snapshot){
  if(!sbSession)throw new Error('Faça login na nuvem antes de fazer o backup.');
- const compacto=await prepararSnapshotNuvem(snapshot);
+ const compacto=await prepararSnapshotNuvem(snapshot,snapshot?.__midiaLocal||null);
  const row={sync_id:CLOUD_BACKUP_SYNC_ID,dados:{sync_id:CLOUD_BACKUP_SYNC_ID,tipo:'GIBIPRINTS_CLOUD_BACKUP',backup:compacto}};
 
  // NÃO usamos upsert/onConflict aqui: a tabela pedidos do projeto pode não ter
