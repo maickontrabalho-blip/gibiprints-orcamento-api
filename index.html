@@ -651,10 +651,15 @@ async function cloudUpsertProduto(prod){
  const nomeNorm=normalizeProdutoNome(prod.nome);
  const {data:rows,error:listError}=await sbClient.from('produtos').select('id,nome,sync_id').not('id','is',null);
  if(listError)throw new Error(listError.message||'Erro ao verificar produtos na nuvem.');
+ /* IMPORTANTE: o sync_id identifica o mesmo produto mesmo quando o nome mudou.
+    Primeiro procuramos pelo sync_id e só depois pelo nome. Assim, RENOMEAR
+    um produto atualiza o registro existente em vez de criar outro produto. */
+ const porSync=prod.sync_id?((rows||[]).find(r=>String(r.sync_id||'')===String(prod.sync_id||''))||null):null;
  const iguais=(rows||[]).filter(r=>normalizeProdutoNome(r.nome)===nomeNorm);
- let existente=iguais[0]||null;
+ let existente=porSync||iguais[0]||null;
  // Remove duplicados antigos do mesmo produto antes de salvar.
- for(const dup of iguais.slice(1)){
+ for(const dup of iguais){
+   if(String(dup.id)===String(existente?.id))continue;
    const del=await sbClient.from('produtos').delete().eq('id',dup.id);
    if(del.error)throw new Error(del.error.message||'Erro ao remover duplicidade do produto na nuvem.');
  }
