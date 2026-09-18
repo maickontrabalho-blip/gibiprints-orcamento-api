@@ -36,29 +36,39 @@ footer{text-align:center;color:var(--muted);font-size:12px;padding:35px 18px 50p
 @media (max-width:520px){.prices{grid-template-columns:repeat(2,minmax(0,1fr));gap:7px}.price{padding:8px 6px}.price b{font-size:13px}.price span{font-size:9px}.body{padding:15px}.name{font-size:21px}}
 .galleryError{position:absolute;inset:0;display:grid;place-items:center;color:#829088;font-weight:800;background:#edf2ee}
 
-/* GIBIPRINTS — Linhas / Mostruários no catálogo público */
+/* GIBIPRINTS — Linhas / Mostruários compactas */
 .public-lines-section{margin-top:22px}
-.public-lines-head{background:#fff;border:1px solid #d9e1d8;border-radius:16px;padding:16px;margin-bottom:12px}
-.public-lines-head h2{margin:0 0 5px;color:#075b35;font-size:22px}
-.public-lines-head p{margin:0;color:#68736b;font-size:13px;line-height:1.45}
-.public-lines-grid{display:grid;gap:14px}
-.public-line-card{background:#fff;border:1px solid #d9e1d8;border-radius:16px;overflow:hidden}
-.public-line-title{padding:13px 15px;background:#f4f8f3;border-bottom:1px solid #d9e1d8}
-.public-line-title b{display:block;color:#075b35;font-size:19px}
-.public-line-title span{display:block;margin-top:3px;color:#68736b;font-size:11px;font-weight:700}
-.public-line-models{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;padding:12px}
-.public-line-model{border:1px solid #e0e7e1;border-radius:13px;overflow:hidden;background:#fafcfa}
-.public-line-model-photo{aspect-ratio:1/1;background:#eef3ef;overflow:hidden;display:flex;align-items:center;justify-content:center}
-.public-line-model-photo img{width:100%;height:100%;object-fit:cover;display:block}
-.public-line-model-body{padding:10px}
-.public-line-model-body b{display:block;color:#173326;font-size:14px}
+.public-lines-head{background:#fff;border:1px solid #d9e1d8;border-radius:16px;padding:14px 16px;margin-bottom:12px}
+.public-lines-head h2{margin:0 0 4px;color:#075b35;font-size:21px}
+.public-lines-head p{margin:0;color:#68736b;font-size:13px;line-height:1.4}
+.public-lines-grid{display:block}
+.public-line-card{background:#fff;border:1px solid #d9e1d8;border-radius:18px;overflow:hidden;box-shadow:0 3px 12px rgba(0,0,0,.05)}
+.public-line-title{position:relative;display:flex;align-items:center;justify-content:center;gap:10px;padding:12px 48px 10px;background:#f4f8f3;border-bottom:1px solid #d9e1d8;touch-action:pan-y;user-select:none}
+.public-line-title b{display:block;color:#075b35;font-size:19px;text-align:center}
+.public-line-title span{display:none}
+.public-line-nav{position:absolute;top:50%;transform:translateY(-50%);width:34px;height:34px;border:0;border-radius:50%;background:#fff;color:#075b35;font-size:24px;font-weight:900;line-height:1;box-shadow:0 2px 8px rgba(0,0,0,.12);display:grid;place-items:center;cursor:pointer;z-index:3}
+.public-line-nav.prev{left:10px}.public-line-nav.next{right:10px}
+.public-line-viewport{overflow:hidden;touch-action:pan-y;position:relative}
+.public-line-track{display:flex;width:100%;transition:transform .28s cubic-bezier(.22,.61,.36,1);will-change:transform}
+.public-line-slide{flex:0 0 100%;width:100%;padding:10px 10px 12px;box-sizing:border-box}
+.public-line-model{border:1px solid #e0e7e1;border-radius:14px;overflow:hidden;background:#fafcfa}
+.public-line-model-photo{height:330px;background:#eef3ef;overflow:hidden;position:relative;display:flex;align-items:center;justify-content:center;touch-action:pan-y}
+.public-line-model-photo img{width:100%;height:100%;object-fit:cover;display:block;pointer-events:none;user-select:none;-webkit-user-drag:none}
+.public-line-photo-nav{position:absolute;inset:0;display:flex;align-items:center;justify-content:space-between;padding:0 9px;pointer-events:none}
+.public-line-photo-nav button{pointer-events:auto;width:38px;height:38px;border:0;border-radius:50%;background:rgba(255,255,255,.92);color:#075b35;font-size:23px;font-weight:900;box-shadow:0 2px 8px rgba(0,0,0,.14);cursor:pointer}
+.public-line-photo-dots{position:absolute;bottom:9px;left:0;right:0;display:flex;justify-content:center;gap:5px;pointer-events:none}
+.public-line-photo-dots i{width:8px;height:8px;border-radius:50%;background:#cbd4ce;display:block}
+.public-line-photo-dots i.active{background:#075b35}
+.public-line-model-body{padding:10px 11px 11px}
+.public-line-model-body b{display:block;color:#173326;font-size:15px}
 .public-line-model-body .line-price{margin-top:6px;color:#075b35;font-size:12px;font-weight:900}
 .public-line-model-body .line-spec{margin-top:5px;color:#68736b;font-size:10px;line-height:1.4}
-.public-line-more{display:flex;gap:6px;overflow:auto;padding:0 10px 10px}
-.public-line-more img{width:70px;height:70px;object-fit:cover;border-radius:9px;border:1px solid #d9e1d8;flex:0 0 auto}
+.public-line-model-counter{text-align:center;color:#7b867f;font-size:10px;font-weight:800;margin-top:5px}
+.public-line-dots{display:flex;justify-content:center;gap:6px;padding:0 0 12px}
+.public-line-dots i{width:9px;height:9px;border-radius:50%;background:#cbd4ce;display:block}
+.public-line-dots i.active{background:#075b35}
 .public-lines-empty{background:#fff;border:1px dashed #cbd7ca;border-radius:14px;padding:16px;text-align:center;color:#68736b;font-size:13px}
-@media(max-width:560px){.public-line-models{grid-template-columns:1fr}.public-lines-head h2{font-size:20px}}
-
+@media(max-width:560px){.public-line-model-photo{height:330px}.public-lines-head h2{font-size:20px}}
 </style>
 
 <style id="swipe-gallery-fix">
@@ -658,17 +668,12 @@ function renderPublicLines(linhas){
   if(old)old.remove();
 
   const arr=(Array.isArray(linhas)?linhas:[]).filter(l=>l && l.catalogo_ativo!==false);
-
   const section=document.createElement('section');
   section.id='publicLinesSection';
   section.className='public-lines-section';
 
   if(!arr.length){
-    section.innerHTML=`
-      <div class="public-lines-head">
-        <h2>📚 Linhas / Mostruários</h2>
-        <p>Confira nossas linhas de uniformes e modelos disponíveis.</p>
-      </div>`;
+    section.innerHTML=`<div class="public-lines-head"><h2>📚 Linhas / Mostruários</h2><p>Confira nossas linhas de uniformes e modelos disponíveis.</p></div>`;
     document.getElementById('publicLinesMount')?.replaceChildren(section);
     return;
   }
@@ -676,55 +681,97 @@ function renderPublicLines(linhas){
   section.innerHTML=`
     <div class="public-lines-head">
       <h2>📚 Linhas / Mostruários</h2>
-      <p>Confira nossas linhas de uniformes e os modelos disponíveis.</p>
+      <p>Deslize para os lados para ver as linhas e os modelos.</p>
     </div>
     <div class="public-lines-grid">
-      ${arr.map((linha)=>{
-        const modelos=Array.isArray(linha.modelos)?linha.modelos:[];
-        return `
-          <article class="public-line-card">
-            <div class="public-line-title">
-              <b>${esc(linha.titulo||'Linha de Uniformes')}</b>
-              <span>${modelos.length} modelo(s)</span>
-            </div>
-            <div class="public-line-models">
-              ${modelos.map((m)=>{
-                const refs=(Array.isArray(m.fotosRemotas)?m.fotosRemotas:[])
-                  .slice().sort((a,b)=>Number(a.ordem||0)-Number(b.ordem||0));
-                const urls=refs.map(publicLinePhotoUrl).filter(Boolean);
-                const foto=urls[0]||'';
-                const precos=m ? {
-                  ate9:Number(m.valorAte9??m.valor??0),
-                  dez:Number(m.valor10Mais??m.valor??0)
-                } : {ate9:0,dez:0};
-                const specs=Array.isArray(m.especificacoes)?m.especificacoes.filter(Boolean).slice(0,4):[];
-                return `
-                  <div class="public-line-model">
-                    <div class="public-line-model-photo">
-                      ${foto
-                        ? `<img src="${esc(foto)}" alt="${esc(m.tipo||'Modelo')}" loading="lazy" referrerpolicy="no-referrer">`
-                        : '<span style="font-size:40px;color:#9aa69f">👕</span>'}
-                    </div>
-                    <div class="public-line-model-body">
-                      <b>${esc(m.tipo||'Modelo')}</b>
-                      ${(precos.ate9>0||precos.dez>0)
-                        ? `<div class="line-price">${precos.ate9>0?`Até 9: ${money(precos.ate9)}`:''}${precos.ate9>0&&precos.dez>0?' • ':''}${precos.dez>0?`10+: ${money(precos.dez)}`:''}</div>`
-                        : ''}
-                      ${specs.length?`<div class="line-spec">${esc(specs.join(' • '))}</div>`:''}
-                    </div>
-                    ${urls.length>1
-                      ? `<div class="public-line-more">${urls.slice(1,5).map((u,j)=>`<img src="${esc(u)}" alt="${esc(m.tipo||'Modelo')} — foto ${j+2}" loading="lazy" referrerpolicy="no-referrer">`).join('')}</div>`
-                      : ''}
-                  </div>`;
-              }).join('')}
-            </div>
-          </article>`;
-      }).join('')}
+      <article class="public-line-card" id="publicLineCard">
+        <div class="public-line-title" id="publicLineTitle"></div>
+        <div class="public-line-viewport" id="publicLineViewport">
+          <div class="public-line-track" id="publicLineTrack"></div>
+        </div>
+        <div class="public-line-dots" id="publicLineDots"></div>
+      </article>
+    </div>`;
+  document.getElementById('publicLinesMount')?.replaceChildren(section);
+
+  const state={line:0,model:0,photo:0};
+  const titleEl=section.querySelector('#publicLineTitle');
+  const trackEl=section.querySelector('#publicLineTrack');
+  const dotsEl=section.querySelector('#publicLineDots');
+  const viewport=section.querySelector('#publicLineViewport');
+
+  function modelsOf(){return Array.isArray(arr[state.line]?.modelos)?arr[state.line].modelos:[]}
+  function refsOf(m){
+    return (Array.isArray(m?.fotosRemotas)?m.fotosRemotas:[])
+      .slice().sort((a,b)=>Number(a.ordem||0)-Number(b.ordem||0))
+      .map(publicLinePhotoUrl).filter(Boolean);
+  }
+  function priceHtml(m){
+    const a=Number(m?.valorAte9??m?.valor??0), b=Number(m?.valor10Mais??m?.valor??0);
+    if(!a&&!b)return '';
+    return `<div class="line-price">${a?`Até 9: ${money(a)}`:''}${a&&b?' • ':''}${b?`10+: ${money(b)}`:''}</div>`;
+  }
+  function render(){
+    const linha=arr[state.line]||{};
+    const modelos=modelsOf();
+    if(state.model>=modelos.length)state.model=0;
+    const m=modelos[state.model]||{};
+    const urls=refsOf(m);
+    if(state.photo>=urls.length)state.photo=0;
+    const foto=urls[state.photo]||'';
+    const specs=Array.isArray(m.especificacoes)?m.especificacoes.filter(Boolean).slice(0,4):[];
+
+    titleEl.innerHTML=`
+      <button class="public-line-nav prev" type="button" aria-label="Linha anterior">‹</button>
+      <b>LINHA: ${esc(linha.titulo||'Uniformes')}</b>
+      <button class="public-line-nav next" type="button" aria-label="Próxima linha">›</button>`;
+
+    trackEl.innerHTML=`<div class="public-line-slide">
+      <div class="public-line-model">
+        <div class="public-line-model-photo" id="publicLinePhoto">
+          ${foto?`<img src="${esc(foto)}" alt="${esc((linha.titulo||'Linha')+' — '+(m.tipo||'Modelo'))}" loading="lazy" referrerpolicy="no-referrer">`:'<span style="font-size:40px;color:#9aa69f">👕</span>'}
+          ${urls.length>1?`<div class="public-line-photo-nav">
+            <button type="button" class="photo-prev" aria-label="Foto anterior">‹</button>
+            <button type="button" class="photo-next" aria-label="Próxima foto">›</button>
+          </div>
+          <div class="public-line-photo-dots">${urls.map((_,i)=>`<i class="${i===state.photo?'active':''}"></i>`).join('')}</div>`:''}
+        </div>
+        <div class="public-line-model-body">
+          <b>${esc(m.tipo||'Modelo de uniforme')}</b>
+          ${priceHtml(m)}
+          ${specs.length?`<div class="line-spec">${esc(specs.join(' • '))}</div>`:''}
+          <div class="public-line-model-counter">${state.model+1} de ${Math.max(modelos.length,1)} modelos</div>
+        </div>
+      </div>
     </div>`;
 
-  document.getElementById('publicLinesMount')?.replaceChildren(section);
-}
+    dotsEl.innerHTML=modelos.map((_,i)=>`<i class="${i===state.model?'active':''}"></i>`).join('');
+    trackEl.style.transform='translate3d(0,0,0)';
 
+    titleEl.querySelector('.prev').onclick=()=>{state.line=(state.line-1+arr.length)%arr.length;state.model=0;state.photo=0;render()};
+    titleEl.querySelector('.next').onclick=()=>{state.line=(state.line+1)%arr.length;state.model=0;state.photo=0;render()};
+    section.querySelector('.photo-prev')?.addEventListener('click',e=>{e.stopPropagation();state.photo=(state.photo-1+urls.length)%urls.length;render()});
+    section.querySelector('.photo-next')?.addEventListener('click',e=>{e.stopPropagation();state.photo=(state.photo+1)%urls.length;render()});
+    dotsEl.querySelectorAll('i').forEach((d,i)=>d.onclick=()=>{state.model=i;state.photo=0;render()});
+
+    bindLineSwipe(viewport,()=>{
+      state.model=(state.model+1)%Math.max(modelos.length,1);state.photo=0;render();
+    },()=>{
+      state.model=(state.model-1+Math.max(modelos.length,1))%Math.max(modelos.length,1);state.photo=0;render();
+    });
+    const photoEl=section.querySelector('#publicLinePhoto');
+    if(photoEl && urls.length>1) bindLineSwipe(photoEl,()=>{state.photo=(state.photo+1)%urls.length;render()},()=>{state.photo=(state.photo-1+urls.length)%urls.length;render()});
+  }
+
+  let swipeToken=0;
+  function bindLineSwipe(el,onNext,onPrev){
+    const token=++swipeToken;
+    let sx=0,sy=0,active=false;
+    el.ontouchstart=e=>{if(e.touches.length!==1)return;active=true;sx=e.touches[0].clientX;sy=e.touches[0].clientY};
+    el.ontouchend=e=>{if(!active)return;active=false;if(token!==swipeToken)return;const t=e.changedTouches[0],dx=t.clientX-sx,dy=t.clientY-sy;if(Math.abs(dx)>45&&Math.abs(dx)>Math.abs(dy)*1.2){if(dx<0)onNext();else onPrev()}};
+  }
+  render();
+}
 async function carregarLinhasPublicas(){
   try{
     /*

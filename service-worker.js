@@ -1,4 +1,4 @@
-const CACHE_NAME = 'gbprints-cache-v29';
+const CACHE_NAME = 'gbprints-cache-v5';
 
 const APP_FILES = [
   './',
@@ -26,6 +26,7 @@ self.addEventListener('activate', event => {
         )
       )
       .then(() => self.clients.claim())
+    )
   );
 });
 
