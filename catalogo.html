@@ -35,6 +35,30 @@ footer{text-align:center;color:var(--muted);font-size:12px;padding:35px 18px 50p
 @media(max-width:650px){.top{align-items:flex-start}.sub{display:none}.grid{grid-template-columns:1fr}.gallery{height:330px}.prices{grid-template-columns:repeat(2,1fr)}.formGrid{grid-template-columns:1fr}.cartPanel{padding:0}.cartBox{border-radius:24px 24px 0 0;max-height:94vh}}
 @media (max-width:520px){.prices{grid-template-columns:repeat(2,minmax(0,1fr));gap:7px}.price{padding:8px 6px}.price b{font-size:13px}.price span{font-size:9px}.body{padding:15px}.name{font-size:21px}}
 .galleryError{position:absolute;inset:0;display:grid;place-items:center;color:#829088;font-weight:800;background:#edf2ee}
+
+/* GIBIPRINTS — Linhas / Mostruários no catálogo público */
+.public-lines-section{margin-top:22px}
+.public-lines-head{background:#fff;border:1px solid #d9e1d8;border-radius:16px;padding:16px;margin-bottom:12px}
+.public-lines-head h2{margin:0 0 5px;color:#075b35;font-size:22px}
+.public-lines-head p{margin:0;color:#68736b;font-size:13px;line-height:1.45}
+.public-lines-grid{display:grid;gap:14px}
+.public-line-card{background:#fff;border:1px solid #d9e1d8;border-radius:16px;overflow:hidden}
+.public-line-title{padding:13px 15px;background:#f4f8f3;border-bottom:1px solid #d9e1d8}
+.public-line-title b{display:block;color:#075b35;font-size:19px}
+.public-line-title span{display:block;margin-top:3px;color:#68736b;font-size:11px;font-weight:700}
+.public-line-models{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;padding:12px}
+.public-line-model{border:1px solid #e0e7e1;border-radius:13px;overflow:hidden;background:#fafcfa}
+.public-line-model-photo{aspect-ratio:1/1;background:#eef3ef;overflow:hidden;display:flex;align-items:center;justify-content:center}
+.public-line-model-photo img{width:100%;height:100%;object-fit:cover;display:block}
+.public-line-model-body{padding:10px}
+.public-line-model-body b{display:block;color:#173326;font-size:14px}
+.public-line-model-body .line-price{margin-top:6px;color:#075b35;font-size:12px;font-weight:900}
+.public-line-model-body .line-spec{margin-top:5px;color:#68736b;font-size:10px;line-height:1.4}
+.public-line-more{display:flex;gap:6px;overflow:auto;padding:0 10px 10px}
+.public-line-more img{width:70px;height:70px;object-fit:cover;border-radius:9px;border:1px solid #d9e1d8;flex:0 0 auto}
+.public-lines-empty{background:#fff;border:1px dashed #cbd7ca;border-radius:14px;padding:16px;text-align:center;color:#68736b;font-size:13px}
+@media(max-width:560px){.public-line-models{grid-template-columns:1fr}.public-lines-head h2{font-size:20px}}
+
 </style>
 
 <style id="swipe-gallery-fix">
@@ -613,6 +637,110 @@ async function carregarConfiguracaoFreteCatalogo(){
   }catch(e){console.warn('Configuração de frete do catálogo:',e);catalogFreteKm=1.00;}
 }
 
+
+/* ==================== GIBIPRINTS — LINHAS / MOSTRUÁRIOS PÚBLICOS ====================
+   As linhas são publicadas pelo backup completo salvo em public.pedidos.
+   O index.html já grava snapshot.linhas nesse registro.
+*/
+const PUBLIC_LINES_BACKUP_ID='GIBIPRINTS_LAST_BACKUP_V1';
+
+function publicLinePhotoUrl(ref){
+  if(!ref)return '';
+  let url=String(ref.public_url||'').trim();
+  if(!url && ref.storage_path){
+    url=publicStorageUrl(ref.storage_path);
+  }
+  return url;
+}
+
+function renderPublicLines(linhas){
+  const old=document.getElementById('publicLinesSection');
+  if(old)old.remove();
+
+  const arr=(Array.isArray(linhas)?linhas:[]).filter(l=>l && l.catalogo_ativo!==false);
+
+  const section=document.createElement('section');
+  section.id='publicLinesSection';
+  section.className='public-lines-section';
+
+  if(!arr.length){
+    section.innerHTML=`
+      <div class="public-lines-head">
+        <h2>📚 Linhas / Mostruários</h2>
+        <p>Confira nossas linhas de uniformes e modelos disponíveis.</p>
+      </div>`;
+    document.getElementById('grid')?.insertAdjacentElement('afterend',section);
+    return;
+  }
+
+  section.innerHTML=`
+    <div class="public-lines-head">
+      <h2>📚 Linhas / Mostruários</h2>
+      <p>Confira nossas linhas de uniformes e os modelos disponíveis.</p>
+    </div>
+    <div class="public-lines-grid">
+      ${arr.map((linha)=>{
+        const modelos=Array.isArray(linha.modelos)?linha.modelos:[];
+        return `
+          <article class="public-line-card">
+            <div class="public-line-title">
+              <b>${esc(linha.titulo||'Linha de Uniformes')}</b>
+              <span>${modelos.length} modelo(s)</span>
+            </div>
+            <div class="public-line-models">
+              ${modelos.map((m)=>{
+                const refs=(Array.isArray(m.fotosRemotas)?m.fotosRemotas:[])
+                  .slice().sort((a,b)=>Number(a.ordem||0)-Number(b.ordem||0));
+                const urls=refs.map(publicLinePhotoUrl).filter(Boolean);
+                const foto=urls[0]||'';
+                const precos=m ? {
+                  ate9:Number(m.valorAte9??m.valor??0),
+                  dez:Number(m.valor10Mais??m.valor??0)
+                } : {ate9:0,dez:0};
+                const specs=Array.isArray(m.especificacoes)?m.especificacoes.filter(Boolean).slice(0,4):[];
+                return `
+                  <div class="public-line-model">
+                    <div class="public-line-model-photo">
+                      ${foto
+                        ? `<img src="${esc(foto)}" alt="${esc(m.tipo||'Modelo')}" loading="lazy" referrerpolicy="no-referrer">`
+                        : '<span style="font-size:40px;color:#9aa69f">👕</span>'}
+                    </div>
+                    <div class="public-line-model-body">
+                      <b>${esc(m.tipo||'Modelo')}</b>
+                      ${(precos.ate9>0||precos.dez>0)
+                        ? `<div class="line-price">${precos.ate9>0?`Até 9: ${money(precos.ate9)}`:''}${precos.ate9>0&&precos.dez>0?' • ':''}${precos.dez>0?`10+: ${money(precos.dez)}`:''}</div>`
+                        : ''}
+                      ${specs.length?`<div class="line-spec">${esc(specs.join(' • '))}</div>`:''}
+                    </div>
+                    ${urls.length>1
+                      ? `<div class="public-line-more">${urls.slice(1,5).map((u,j)=>`<img src="${esc(u)}" alt="${esc(m.tipo||'Modelo')} — foto ${j+2}" loading="lazy" referrerpolicy="no-referrer">`).join('')}</div>`
+                      : ''}
+                  </div>`;
+              }).join('')}
+            </div>
+          </article>`;
+      }).join('')}
+    </div>`;
+
+  document.getElementById('grid')?.insertAdjacentElement('afterend',section);
+}
+
+async function carregarLinhasPublicas(){
+  try{
+    const query='select=dados&sync_id=eq.'+encodeURIComponent(PUBLIC_LINES_BACKUP_ID)+'&limit=1';
+    const rows=await supabaseRest('pedidos',query);
+    const row=Array.isArray(rows)?rows[0]:null;
+    const snapshot=row?.dados?.backup;
+    const linhas=Array.isArray(snapshot?.linhas)?snapshot.linhas:[];
+    renderPublicLines(linhas);
+    return linhas;
+  }catch(e){
+    console.warn('Linhas do catálogo público indisponíveis:',e);
+    renderPublicLines([]);
+    return [];
+  }
+}
+
 async function load(){
   const status=document.getElementById('status');
   const setStatus=t=>{if(status)status.textContent=t};
@@ -653,6 +781,7 @@ async function load(){
 
     document.getElementById('grid').innerHTML=products.map(productCard).join('');
     products.forEach(bindSwipeGallery);
+    await carregarLinhasPublicas();
     status.textContent=products.length?`${products.length} produto(s) no catálogo`:'Nenhum produto ativo no catálogo.';
     repriceCart();saveCart();
   }catch(e){
