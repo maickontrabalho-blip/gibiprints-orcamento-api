@@ -104,7 +104,7 @@ footer{text-align:center;color:var(--muted);font-size:12px;padding:35px 18px 50p
 </head>
 <body>
 <header><div class="top"><div><div class="brand">GIBI<span>PRINTS</span></div><div class="sub">Cada estampa conta uma história</div></div><button class="cartBtn" onclick="openCart()">🛒 Carrinho <span id="cartCount" class="cartCount">0</span></button></div></header>
-<main><div id="status" class="status">Carregando catálogo…</div><section id="grid" class="grid"></section></main>
+<main><div id="status" class="status">Carregando catálogo…</div><section id="publicLinesMount"></section><section id="grid" class="grid"></section></main>
 <footer>GIBIPRINTS • Catálogo online • Pedido mínimo: 5 itens</footer>
 <div id="cartPanel" class="cartPanel" onclick="if(event.target===this)closeCart()"><div class="cartBox"><div class="cartHead"><div><h2 style="margin:0">🛒 Seu pedido</h2><div class="meta">Confira os produtos, cores, tamanhos e quantidades.</div></div><button class="close" onclick="closeCart()">✕</button></div><div id="cartList"></div><div id="cartSummary"></div></div></div>
 <script>
@@ -669,7 +669,7 @@ function renderPublicLines(linhas){
         <h2>📚 Linhas / Mostruários</h2>
         <p>Confira nossas linhas de uniformes e modelos disponíveis.</p>
       </div>`;
-    document.getElementById('grid')?.insertAdjacentElement('beforebegin',section);
+    document.getElementById('publicLinesMount')?.replaceChildren(section);
     return;
   }
 
@@ -722,16 +722,33 @@ function renderPublicLines(linhas){
       }).join('')}
     </div>`;
 
-  document.getElementById('grid')?.insertAdjacentElement('beforebegin',section);
+  document.getElementById('publicLinesMount')?.replaceChildren(section);
 }
 
 async function carregarLinhasPublicas(){
   try{
-    const query='select=dados&sync_id=eq.'+encodeURIComponent(PUBLIC_LINES_BACKUP_ID)+'&limit=1';
-    const rows=await supabaseRest('pedidos',query);
-    const row=Array.isArray(rows)?rows[0]:null;
-    const snapshot=row?.dados?.backup;
-    const linhas=Array.isArray(snapshot?.linhas)?snapshot.linhas:[];
+    /*
+      As linhas continuam armazenadas no backup privado em pedidos.
+      O catálogo público NÃO acessa pedidos diretamente.
+      Ele chama somente a RPC pública que devolve exclusivamente
+      o array de linhas publicado para o catálogo.
+    */
+    const url=`${SUPABASE_URL}/rest/v1/rpc/get_catalogo_linhas`;
+    const response=await fetch(url,{
+      method:'POST',
+      headers:{
+        apikey:SUPABASE_PUBLISHABLE_KEY,
+        Authorization:`Bearer ${SUPABASE_PUBLISHABLE_KEY}`,
+        Accept:'application/json',
+        'Content-Type':'application/json'
+      },
+      body:'{}',
+      cache:'no-store'
+    });
+    const text=await response.text();
+    if(!response.ok) throw new Error(`Supabase RPC ${response.status}: ${text.slice(0,300)}`);
+    const data=text?JSON.parse(text):[];
+    const linhas=Array.isArray(data)?data:[];
     renderPublicLines(linhas);
     return linhas;
   }catch(e){
