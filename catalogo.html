@@ -669,7 +669,7 @@ function renderPublicLines(linhas){
         <h2>📚 Linhas / Mostruários</h2>
         <p>Confira nossas linhas de uniformes e modelos disponíveis.</p>
       </div>`;
-    document.getElementById('grid')?.insertAdjacentElement('afterend',section);
+    document.getElementById('grid')?.insertAdjacentElement('beforebegin',section);
     return;
   }
 
@@ -722,7 +722,7 @@ function renderPublicLines(linhas){
       }).join('')}
     </div>`;
 
-  document.getElementById('grid')?.insertAdjacentElement('afterend',section);
+  document.getElementById('grid')?.insertAdjacentElement('beforebegin',section);
 }
 
 async function carregarLinhasPublicas(){
