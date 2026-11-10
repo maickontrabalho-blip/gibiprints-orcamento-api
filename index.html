@@ -923,13 +923,32 @@ async function prepararSnapshotNuvem(snapshot,midiaLocal=null){
  const midia=await sincronizarMidiasBackupNuvem(midiaLocal);
  const manifest=Array.isArray(midia.manifest)?midia.manifest:[];
  const linhas=Array.isArray(out.linhas)?out.linhas:[];
+ /* O botão Backup também precisa publicar fotos de linhas recém-criadas.
+    Antes, somente o fluxo separado 'Enviar catálogo atual' fazia esse upload;
+    no backup comum, a preparação falhava ou salvava a linha sem referências. */
+ for(const linha of linhas){
+   const modelos=Array.isArray(linha.modelos)?linha.modelos:[];
+   const precisaUpload=modelos.some(m=>{
+     const fotos=Array.isArray(m.fotos)?m.fotos:[];
+     const remotas=Array.isArray(m.fotosRemotas)?m.fotosRemotas.filter(x=>x?.storage_path||x?.public_url):[];
+     return fotos.length>remotas.length;
+   });
+   if(precisaUpload){
+     const sincronizadas=await sincronizarFotosLinhaSupabase(linha);
+     for(const item of sincronizadas||[]){
+       const modelo=modelos.find(m=>String(m.id)===String(item.modelId));
+       if(modelo)modelo.fotosRemotas=item.fotos||[];
+     }
+     await linhaPut(linha);
+   }
+ }
  const compactas=linhas.map(linha=>{
    const clone=JSON.parse(JSON.stringify(linha));
    clone.modelos=(Array.isArray(clone.modelos)?clone.modelos:[]).map(m=>{
      const remotas=Array.isArray(m.fotosRemotas)?m.fotosRemotas.filter(x=>x?.storage_path||x?.public_url):[];
      const refs=remotas.length?remotas.map((x,i)=>({storage_path:x.storage_path||'',public_url:x.public_url||'',content_hash:x.content_hash||x.hash||'',mime_type:x.mime_type||'image/jpeg',ordem:Number(x.ordem??i),tamanho_bytes:Number(x.tamanho_bytes||0)}))
        :manifest.filter(x=>String(x?.origem||'').startsWith(`linha:${linha.id}:${m.id}:`)).sort((a,b)=>Number(String(a.origem).split(':').pop())-Number(String(b.origem).split(':').pop())).map((x,i)=>({storage_path:x.storage_path,public_url:x.public_url,content_hash:x.hash,mime_type:x.mime_type,ordem:i,tamanho_bytes:x.tamanho_bytes}));
-     const fotosOriginais=Array.isArray(m.fotos)?m.fotos.length:Number(m.fotosCount||0);
+     const fotosOriginais=Math.max(Array.isArray(m.fotos)?m.fotos.length:0,Number(m.fotosCount||0),remotas.length);
      if(fotosOriginais!==refs.length)throw new Error(`A linha ${linha.titulo||''} ficou com ${refs.length} de ${fotosOriginais} foto(s) sincronizada(s) no modelo ${m.tipo||''}.`);
      delete m.fotos;
      m.fotosRemotas=refs;
@@ -957,12 +976,18 @@ async function hidratarLinhasDoBackup(linhas){
       if(!Array.isArray(m.fotosRemotas)||!m.fotosRemotas.length)continue;
       for(const ref of m.fotosRemotas){
         try{
-          const res=await fetch(ref.public_url,{cache:'force-cache'});
+          let url=String(ref.public_url||'').trim();
+          if(!url&&ref.storage_path)url=sbClient.storage.from(CATALOG_SUPABASE_BUCKET).getPublicUrl(ref.storage_path).data.publicUrl;
+          if(!url)throw new Error('Referência sem URL pública ou caminho do Storage.');
+          const res=await fetch(url,{cache:'no-store'});
           if(!res.ok)throw new Error('HTTP '+res.status);
-          m.fotos.push(await blobToDataUrl(await res.blob()));
-        }catch(e){console.warn('Falha ao baixar foto de linha:',ref?.public_url,e);}
+          const blob=await res.blob();
+          if(!blob.type.startsWith('image/'))throw new Error('O arquivo remoto não é uma imagem.');
+          m.fotos.push(await blobToDataUrl(blob));
+        }catch(e){console.warn('Falha ao baixar foto de linha:',ref,e);}
       }
-      delete m.fotosRemotas;
+      // Mantém as referências remotas como segunda via, mesmo após hidratar o arquivo local.
+      m.fotosCount=Math.max(Number(m.fotosCount||0),m.fotosRemotas.length);
     }
     out.push(clone);
   }
@@ -1562,15 +1587,29 @@ async function exportarBackup(){
 
 async function restaurarFotosCatalogoDoBackup(snapshot){
   const manifest=Array.isArray(snapshot?.midia?.manifest)?snapshot.midia.manifest:[];
-  const refs=manifest.filter(x=>x?.tipo==='catalogo'&&x?.public_url&&x?.produtoId);
-  if(!refs.length)return {restauradas:0,produtos:0};
+  let refs=manifest.filter(x=>x?.tipo==='catalogo'&&x?.produtoId&&(x?.public_url||x?.storage_path));
   await initCatalogStorage();
 
-  /* Reconstrói o catálogo antes de restaurar as fotos. Isso é essencial quando
-     o telefone perdeu o IndexedDB: as fotos precisam de um produto ao qual ficar vinculadas. */
+  /* Sempre reconstrói o catálogo, mesmo quando o manifesto de fotos estiver vazio.
+     Antes, a função retornava cedo e deixava o IndexedDB sem o catálogo após formatar. */
   const atual=getCatalogData()||{produtos:[],config:defaultCatalogData().config};
   const meta=JSON.parse(JSON.stringify(snapshot?.productMeta||PRODUCT_META||{}));
   const nomes=Object.keys(snapshot?.produtos||{});
+  /* Segunda via: se um backup antigo não tiver manifesto de fotos, recupera as
+     imagens pelos registros já sincronizados em catalogo_fotos, usando o ID cloud
+     guardado em productMeta e religando ao ID local do produto. */
+  if(!refs.length&&sbSession){
+    try{
+      const cloudToLocal=new Map();
+      for(const nome of nomes){const m=meta[nome]||{};if(m.id&&m.catalog_id)cloudToLocal.set(String(m.id),String(m.catalog_id));}
+      const cloudIds=[...cloudToLocal.keys()];
+      if(cloudIds.length){
+        const r=await sbClient.from('catalogo_fotos').select('id,produto_id,public_url,storage_path,content_hash,ordem,mime_type,tamanho_bytes').in('produto_id',cloudIds).eq('ativo',true).order('ordem',{ascending:true});
+        if(r.error)throw r.error;
+        refs=(r.data||[]).map(f=>({tipo:'catalogo',produtoId:cloudToLocal.get(String(f.produto_id)),photoId:`cloud_${f.id}`,hash:f.content_hash||'',public_url:f.public_url||'',storage_path:f.storage_path||'',ordem:Number(f.ordem||0),mime_type:f.mime_type||'image/jpeg',tamanho_bytes:Number(f.tamanho_bytes||0)})).filter(f=>f.produtoId&&(f.public_url||f.storage_path));
+      }
+    }catch(e){console.warn('Recuperação alternativa das fotos pela tabela catalogo_fotos:',e);}
+  }
   const porId=new Map((atual.produtos||[]).map(p=>[String(p.id||''),p]));
   const porNome=new Map((atual.produtos||[]).map(p=>[normalizeProdutoNome(p.nome),p]));
   const reconstruidos=[];
@@ -1581,30 +1620,36 @@ async function restaurarFotosCatalogoDoBackup(snapshot){
     let p=(id&&porId.get(id))||porNome.get(normalizeProdutoNome(nome));
     if(!p){
       const precos=Array.isArray(snapshot.produtos[nome])?snapshot.produtos[nome]:[0,0,0,0];
-      p=normalizeCatalogProduct({id:id||crypto.randomUUID(),nome,categoria:m.categoria||'Produto',descricao:m.descricao||'',ativo:m.catalogo_ativo!==false,fotoIds:m.catalog_fotoIds||[],faixas:[
+      p=normalizeCatalogProduct({id:id||crypto.randomUUID(),nome,categoria:m.categoria||'Produto',descricao:m.descricao||'',ativo:m.catalogo_ativo!==false,fotoIds:[],faixas:[
         {aPartir:1,valor:Number(precos[0])||0},{aPartir:10,valor:Number(precos[1])||0},{aPartir:20,valor:Number(precos[2])||0},{aPartir:50,valor:Number(precos[3])||0}
       ]});
     }
     p.id=id||p.id;
-    p.nome=nome;p.categoria=m.categoria||p.categoria||'Produto';p.descricao=m.descricao??p.descricao??'';p.ativo=m.catalogo_ativo!==false;p.fotoIds=Array.isArray(m.catalog_fotoIds)?m.catalog_fotoIds.slice(0,30):Array.isArray(p.fotoIds)?p.fotoIds.slice(0,30):[];
+    p.nome=nome;p.categoria=m.categoria||p.categoria||'Produto';p.descricao=m.descricao??p.descricao??'';p.ativo=m.catalogo_ativo!==false;
+    p.fotoIds=[];
     reconstruidos.push(p);
   }
   if(reconstruidos.length)atual.produtos=reconstruidos;
 
-  let restauradas=0;
+  let restauradas=0, falhas=0;
   const porProduto=new Map();
   for(const ref of refs){
     try{
-      const res=await fetch(ref.public_url,{cache:'no-store'});
-      if(!res.ok)throw new Error('HTTP '+res.status);
-      const data=await blobToDataUrl(await res.blob());
-      if(!data)continue;
-      const id=ref.photoId||`${ref.produtoId}_backup_${ref.hash}`;
+      let url=String(ref.public_url||'').trim();
+      if(!url&&ref.storage_path)url=sbClient.storage.from(CATALOG_SUPABASE_BUCKET).getPublicUrl(ref.storage_path).data.publicUrl;
+      if(!url)throw new Error('Referência sem URL pública e sem caminho no Storage.');
+      const res=await fetch(url,{cache:'no-store'});
+      if(!res.ok)throw new Error(`HTTP ${res.status}`);
+      const blob=await res.blob();
+      if(!blob.type.startsWith('image/'))throw new Error(`O arquivo retornado não é imagem (${blob.type||'tipo desconhecido'}).`);
+      const data=await blobToDataUrl(blob);
+      if(!data)throw new Error('Não foi possível converter a imagem recuperada.');
+      const id=ref.photoId||`${ref.produtoId}_backup_${ref.hash||ref.content_hash||restauradas}`;
       await catalogPut(CATALOG_PHOTO_STORE,{id,data,ordem:Number(ref.ordem||0),produtoId:String(ref.produtoId),atualizadoEm:new Date().toISOString()});
       if(!porProduto.has(String(ref.produtoId)))porProduto.set(String(ref.produtoId),[]);
       porProduto.get(String(ref.produtoId)).push({id,ordem:Number(ref.ordem||0)});
       restauradas++;
-    }catch(e){console.warn('Falha ao restaurar foto de produto:',ref?.public_url,e);}
+    }catch(e){falhas++;console.warn('Falha ao restaurar foto de produto:',ref,e);}
   }
 
   for(const p of (atual.produtos||[])){
@@ -1616,9 +1661,9 @@ async function restaurarFotosCatalogoDoBackup(snapshot){
     const m=meta[p.nome]||{};
     PRODUCT_META[p.nome]={...(PRODUCT_META[p.nome]||{}),...m,catalog_id:p.id,catalog_fotoIds:p.fotoIds||[]};
   }
-  await catalogPut(CATALOG_STORE,{id:'singleton',data:atual,versao:13,atualizadoEm:new Date().toISOString()});
+  await catalogPut(CATALOG_STORE,{id:'singleton',data:atual,versao:14,atualizadoEm:new Date().toISOString()});
   catalogDataCache=atual;
-  return {restauradas,produtos:porProduto.size};
+  return {restauradas,produtos:porProduto.size,referencias:refs.length,falhas};
 }
 async function restaurarMidiaEspecialBackup(midia){
  const ref=(midia?.manifest||[]).find(x=>x?.origem==='qr_code'&&x?.public_url);
@@ -1647,13 +1692,14 @@ async function restaurarUltimoBackupNuvem(){
   PRODUCT_META={...(snapshot.productMeta||{})};
   persistProductsLocal();
   await restaurarMidiaEspecialBackup(snapshot.midia);
-  await restaurarFotosCatalogoDoBackup(snapshot);
+  const resultadoFotos=await restaurarFotosCatalogoDoBackup(snapshot);
   cloudStoresSynced.add('clientes');
   cloudStoresSynced.add('pedidos');
   cloudStoresSynced.add('produtos');
   renderItems();renderProdutoAdmin();renderResumo();renderLinhasAdmin();await renderHistorico();
   cloudMsg('Último backup restaurado da nuvem.');
-  alert(`Restauração concluída.\n\nClientes: ${clientes.length}\nPedidos: ${pedidos.length}\nProdutos: ${Object.keys(PRODUCTS).length}\nLinhas: ${linhas.length}`);
+  const fotosLinhas=(linhas||[]).reduce((n,l)=>n+(l.modelos||[]).reduce((a,m)=>a+(m.fotos||[]).length,0),0);
+  alert(`Restauração concluída.\n\nClientes: ${clientes.length}\nPedidos: ${pedidos.length}\nProdutos: ${Object.keys(PRODUCTS).length}\nFotos dos produtos: ${resultadoFotos.restauradas}/${resultadoFotos.referencias}\nLinhas: ${linhas.length}\nFotos das linhas: ${fotosLinhas}${resultadoFotos.falhas?`\nFotos com falha: ${resultadoFotos.falhas}`:''}`);
  }catch(e){console.error('Restauração da nuvem:',e);cloudMsg('Erro ao restaurar o backup.');alert('Não foi possível restaurar o último backup da nuvem.\n\n'+(e?.message||e));}
 }
 
@@ -1667,10 +1713,10 @@ async function restaurarBackup(ev){
   if(data.produtos){PRODUCTS={...(data.produtos||{})};PRODUCT_META={...(data.productMeta||{})};persistProductsLocal();}
   if(Array.isArray(data.linhas))await substituirLinhasLocais(data.linhas);
   await restaurarMidiaEspecialBackup(data.midia);
-  await restaurarFotosCatalogoDoBackup(data);
+  const resultadoFotos=await restaurarFotosCatalogoDoBackup(data);
   cloudStoresSynced.add('clientes');cloudStoresSynced.add('pedidos');cloudStoresSynced.add('produtos');
   await renderHistorico();renderItems();renderProdutoAdmin();renderResumo();renderLinhasAdmin();
-  alert(`Backup restaurado com sucesso.\n\nClientes: ${(data.clientes||[]).length}\nPedidos: ${(data.pedidos||[]).length}\nProdutos: ${Object.keys(data.produtos||PRODUCTS||{}).length}\nLinhas: ${(data.linhas||[]).length}`);
+  alert(`Backup restaurado com sucesso.\n\nClientes: ${(data.clientes||[]).length}\nPedidos: ${(data.pedidos||[]).length}\nProdutos: ${Object.keys(data.produtos||PRODUCTS||{}).length}\nFotos dos produtos: ${resultadoFotos.restauradas}/${resultadoFotos.referencias}\nLinhas: ${(data.linhas||[]).length}${resultadoFotos.falhas?`\nFotos com falha: ${resultadoFotos.falhas}`:''}`);
  }catch(e){alert('Não foi possível restaurar o backup.\n\n'+(e?.message||e));}ev.target.value='';
 }
 const TAMANHOS_PROIBIDOS_GIBI=['G1','G2','G3','XG','XXG'];
@@ -2311,6 +2357,7 @@ function getCatalogData(){
 }
 async function loadCatalogPhoto(id){
   if(!id)return '';
+  if(isRemoteCatalogPhotoId(id))return await resolverUrlFotoCatalogo(id);
   const rec=await catalogGet(CATALOG_PHOTO_STORE,id).catch(()=>null);
   return rec?.data||'';
 }
@@ -2617,6 +2664,46 @@ function faixasEditorHtml(faixas){
   const fs=(faixas&&faixas.length?faixas:[{aPartir:1,valor:0},{aPartir:10,valor:0},{aPartir:20,valor:0},{aPartir:50,valor:0}]).slice(0,4);
   return fs.map((f,i)=>`<div style="display:grid;grid-template-columns:90px 1fr;gap:8px;align-items:center;margin:6px 0"><input class="cat-faixa-a" type="number" min="1" value="${Number(f.aPartir)||1}" placeholder="A partir"><input class="cat-faixa-v" type="number" min="0" step="0.01" value="${Number(f.valor)||0}" placeholder="Valor"></div>`).join('');
 }
+/* Fotos online: o aparelho consulta os registros do Supabase e usa as URLs públicas
+   diretamente. O IndexedDB/localStorage deixa de ser requisito para visualizar imagens. */
+const catalogRemotePhotoUrls=new Map();
+const catalogRemotePhotosByProduct=new Map();
+function isRemoteCatalogPhotoId(id){return String(id||'').startsWith('supabase-photo:');}
+async function buscarFotosRemotasDoProduto(produtoCloudId){
+  const key=String(produtoCloudId||'');
+  if(!key || !sbClient)return [];
+  if(catalogRemotePhotosByProduct.has(key))return catalogRemotePhotosByProduct.get(key);
+  const task=(async()=>{
+    const {data,error}=await sbClient.from('catalogo_fotos')
+      .select('id,produto_id,public_url,storage_path,ordem,content_hash,ativo')
+      .eq('produto_id',produtoCloudId).eq('ativo',true).order('ordem',{ascending:true}).limit(30);
+    if(error)throw error;
+    const rows=[];
+    for(const f of (data||[])){
+      let url=String(f.public_url||'').trim();
+      if(!url && f.storage_path){
+        try{url=String(sbClient.storage.from(CATALOG_SUPABASE_BUCKET).getPublicUrl(f.storage_path)?.data?.publicUrl||'').trim();}catch(e){}
+      }
+      if(!url)continue;
+      const id=`supabase-photo:${key}:${String(f.id)}`;
+      const item={id,url,ordem:Number(f.ordem)||0,content_hash:f.content_hash||''};
+      catalogRemotePhotoUrls.set(id,url);rows.push(item);
+    }
+    return rows.sort((a,b)=>a.ordem-b.ordem);
+  })();
+  catalogRemotePhotosByProduct.set(key,task);
+  try{return await task;}catch(e){catalogRemotePhotosByProduct.delete(key);console.warn('Fotos online do produto:',key,e);return [];}
+}
+async function resolverUrlFotoCatalogo(id){
+  const key=String(id||'');
+  if(!isRemoteCatalogPhotoId(key))return '';
+  if(catalogRemotePhotoUrls.has(key))return catalogRemotePhotoUrls.get(key);
+  const parts=key.split(':');
+  if(parts.length<3)return '';
+  const rows=await buscarFotosRemotasDoProduto(parts[1]);
+  return catalogRemotePhotoUrls.get(key)||(rows.find(x=>x.id===key)?.url||'');
+}
+
 async function sincronizarCatalogoComProdutos(){
   /*
     FONTE DE VERDADE DO MOSTRUÁRIO:
@@ -2645,13 +2732,16 @@ async function sincronizarCatalogoComProdutos(){
         {aPartir:50,valor:Number(precos[3])||0}
       ];
 
+    // Prioriza fotos remotas do Supabase; usa as IDs locais apenas como fallback.
+    const remoteRows=await buscarFotosRemotasDoProduto(meta.id);
+    const remoteIds=remoteRows.map(x=>x.id).slice(0,30);
     produtos.push(normalizeCatalogProduct({
       id:meta.catalog_id||antigo.id||crypto.randomUUID(),
       nome,
       categoria:meta.categoria||antigo.categoria||'Produto',
       descricao:meta.descricao??antigo.descricao??'',
       ativo:meta.catalogo_ativo!==false,
-      fotoIds:(meta.catalog_fotoIds||antigo.fotoIds||[]).slice(0,30),
+      fotoIds:remoteIds.length?remoteIds:(meta.catalog_fotoIds||antigo.fotoIds||[]).slice(0,30),
       faixas
     }));
   }
@@ -2791,10 +2881,25 @@ function irProdutoLinhaCatalogo(index,event){
   catalogLinhasState.productLogical[String(catalogLinhasState.lineLogical)]=((Number(index)||0)%total+total)%total;
   renderLinhaCatalogoAtual(true);
 }
+async function carregarLinhasOnlineParaVisualizacao(){
+  if(!sbSession||!sbClient)return [];
+  const {data,error}=await sbClient.from('pedidos').select('dados,id')
+    .eq('sync_id',CLOUD_BACKUP_SYNC_ID).order('id',{ascending:false}).limit(1);
+  if(error)throw error;
+  const row=Array.isArray(data)?data[0]:null;
+  const snapshot=row?.dados?.backup;
+  if(!snapshot||!Array.isArray(snapshot.linhas))return [];
+  // As imagens são baixadas para memória durante a visualização; não é preciso
+  // restaurar nem gravar os arquivos no armazenamento interno do aparelho.
+  return await hidratarLinhasDoBackup(snapshot.linhas);
+}
 async function renderCatalogLinhas(){
   const panel=document.getElementById('catalogLinhasPanel');if(!panel)return;
   try{
-    const arrAll=(await linhaAll()).sort((a,b)=>String(b.atualizadoEm).localeCompare(String(a.atualizadoEm)));
+    let arrAll=[];
+    try{arrAll=await carregarLinhasOnlineParaVisualizacao();}catch(e){console.warn('Linhas online indisponíveis; usando cópia local:',e);}
+    if(!arrAll.length)arrAll=await linhaAll();
+    arrAll=arrAll.sort((a,b)=>String(b.atualizadoEm).localeCompare(String(a.atualizadoEm)));
     const arr=arrAll.filter(l=>l.catalogo_ativo!==false);
     catalogLinhasData=arr;
     if(!arr.length){panel.innerHTML='<div style="display:flex;justify-content:space-between;gap:10px;align-items:center;flex-wrap:wrap"><div><h3 style="margin:0">📚 Linhas / Mostruários</h3><div class="muted" style="margin-top:4px">As linhas ficam disponíveis aqui para consulta e envio, mas <b>não entram no PDF/JPG do catálogo</b>.</div></div><small class="muted">0 linha(s)</small></div>'+renderCatalogLinhasMarkup(arr);return;}
@@ -2875,6 +2980,11 @@ async function loadCatalogPhotoThumb(id){
   const key='thumb:'+id;
   let src=catalogPhotoCache.get(key);
   if(src){catalogCacheSet(key,src);return src;}
+  if(isRemoteCatalogPhotoId(id)){
+    src=await resolverUrlFotoCatalogo(id);
+    if(src)catalogCacheSet(key,src);
+    return src;
+  }
   const rec=await catalogGet(CATALOG_PHOTO_STORE,id).catch(()=>null);
   if(!rec?.data) return '';
   src=rec.thumbData||await criarMiniaturaCatalogo(rec.data);
@@ -2955,7 +3065,7 @@ async function editarProdutoCatalogo(idx){await initCatalogStorage();abrirEditor
 async function abrirEditorCatalogo(idx){
   await initCatalogStorage();
   const ed=document.getElementById('catalogEditor');if(!ed)return;
-  const d=await hydrateCatalogPhotos(getCatalogData());const p=idx>=0?(d.produtos||[])[idx]:null;
+  const d=await hydrateCatalogPhotos(await sincronizarCatalogoComProdutos());const p=idx>=0?(d.produtos||[])[idx]:null;
   catalogEditorPhotos=(p?.fotos||[]).filter(Boolean).slice(0,30).map((src,i)=>({id:p?.fotoIds?.[i]||`${p?.id||crypto.randomUUID()}_foto_${i}`,src}));
   ed.dataset.index=String(idx);ed._faixas=(p?.faixas||[{aPartir:1,valor:0},{aPartir:10,valor:0},{aPartir:20,valor:0},{aPartir:50,valor:0}]).slice(0,4);
   ed.classList.remove('hidden');
@@ -3204,7 +3314,12 @@ async function enviarFotosProdutoCatalogo(idx){
     if(!fontes.length){alert(`O produto "${p.nome||'Produto'}" não possui fotos cadastradas.`);return;}
     const files=[];
     for(let i=0;i<fontes.length;i++){
-      const blob=dataUrlToBlob(fontes[i]);
+      let blob=dataUrlToBlob(fontes[i]);
+      if(!blob && /^https?:\/\//i.test(String(fontes[i]||''))){
+        const response=await fetch(fontes[i],{mode:'cors',cache:'no-store'});
+        if(!response.ok)throw new Error(`Não foi possível baixar a foto ${i+1} do Supabase (HTTP ${response.status}).`);
+        blob=await response.blob();
+      }
       if(!blob)continue;
       const mime=blob.type||'image/jpeg';
       const ext=extFromMime(mime);
