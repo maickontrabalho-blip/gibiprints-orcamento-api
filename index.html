@@ -323,7 +323,8 @@ window.addEventListener('unhandledrejection', function(e){
 <div id="produtosPanel" class="card hidden">
   <h2>📦 Cadastro e edição de produtos</h2>
   <p class="muted">Altere os preços sem mexer no código. Cada produto possui as quatro faixas: 1–9, 10–19, 20–49 e 50+.</p>
-  <div class="actions"><button class="primary" type="button" onclick="novoProdutoAdmin()">➕ Novo produto</button><button class="secondary" type="button" onclick="abrirNovaLinha()">➕ Nova linha</button><button class="secondary" type="button" onclick="sincronizarCatalogoAtual()">☁️ Enviar catálogo atual para a nuvem</button><button class="secondary" type="button" onclick="carregarProdutosNuvem(true)">🔄 Atualizar da nuvem</button></div>
+  <div class="actions"><button class="primary" type="button" onclick="novoProdutoAdmin()">➕ Novo produto</button><button class="secondary" type="button" onclick="abrirNovaLinha()">➕ Nova linha</button><button class="secondary" type="button" id="btnBackupNuvemGibi" onclick="fazerBackupNuvemCompleto()">☁️ Fazer backup na nuvem</button><button class="secondary" type="button" id="btnRestaurarNuvemGibi" onclick="restaurarUltimoBackupNuvem()">♻️ Restaurar da nuvem</button></div>
+  <div id="backupNuvemStatus" class="muted" role="status" aria-live="polite" style="margin-top:8px">Backup e restauração incluem produtos, linhas/mostruários e fotos. Entre na conta para usar.</div>
   <div id="linhasAdminPanel" class="card" style="margin-top:12px;background:#f8fbf7;"></div>
   <div id="produtoAdminForm" class="card hidden" style="margin-top:12px;background:#f8fbf7;">
     <h3 id="produtoAdminTitulo" style="margin-top:0">Novo produto</h3>
@@ -984,7 +985,10 @@ async function hidratarLinhasDoBackup(linhas){
           const blob=await res.blob();
           if(!blob.type.startsWith('image/'))throw new Error('O arquivo remoto não é uma imagem.');
           m.fotos.push(await blobToDataUrl(blob));
-        }catch(e){console.warn('Falha ao baixar foto de linha:',ref,e);}
+        }catch(e){
+          console.error('Falha ao baixar foto de linha:',ref,e);
+          throw new Error(`Não foi possível restaurar uma foto da linha. ${e?.message||e}`);
+        }
       }
       // Mantém as referências remotas como segunda via, mesmo após hidratar o arquivo local.
       m.fotosCount=Math.max(Number(m.fotosCount||0),m.fotosRemotas.length);
@@ -1075,6 +1079,32 @@ async function sincronizarCatalogoAtual(){
     console.error('Backup do catálogo:',e);cloudMsg('Erro no backup do catálogo.');
     alert('Não foi possível concluir o backup.\n\n'+(e?.message||e));return false;
   }finally{btns.forEach(b=>b.disabled=false);}
+}
+
+async function fazerBackupNuvemCompleto(){
+ const btn=document.getElementById('btnBackupNuvemGibi');
+ const status=document.getElementById('backupNuvemStatus');
+ if(!sbSession){alert('Faça login na nuvem antes de fazer o backup.');return false;}
+ if(btn)btn.disabled=true;
+ if(status)status.textContent='Preparando produtos, linhas, clientes, pedidos e fotos para enviar à nuvem...';
+ try{
+   await initCatalogStorage();
+   const snapshot=await montarSnapshotBackup();
+   const salvo=await salvarSnapshotBackupNuvem(snapshot);
+   if(!salvo||salvo.tipo!=='GIBIPRINTS_CLOUD_BACKUP')throw new Error('A nuvem não confirmou a gravação do backup.');
+   const totalProdutos=Object.keys(snapshot.produtos||{}).length;
+   const totalLinhas=(snapshot.linhas||[]).length;
+   const totalFotos=Number(salvo.midia?.total||0);
+   if(status)status.textContent=`✅ Backup concluído na nuvem: ${totalProdutos} produto(s), ${totalLinhas} linha(s) e ${totalFotos} foto(s).`;
+   cloudMsg('Backup completo salvo na nuvem.');
+   alert(`Backup completo salvo na nuvem!\\n\\nProdutos: ${totalProdutos}\\nLinhas / Mostruários: ${totalLinhas}\\nFotos: ${totalFotos}\\nClientes: ${(snapshot.clientes||[]).length}\\nPedidos: ${(snapshot.pedidos||[]).length}`);
+   return true;
+ }catch(e){
+   if(status)status.textContent='❌ Falha no backup. Os dados locais foram mantidos.';
+   console.error('Backup completo GIBIPRINTS:',e);
+   alert('Não foi possível concluir o backup na nuvem.\\n\\n'+(e?.message||e));
+   return false;
+ }finally{if(btn)btn.disabled=false;}
 }
 
 async function carregarProdutosNuvem(showMessage=false){
@@ -1566,7 +1596,7 @@ async function salvarSnapshotBackupNuvem(snapshot){
      const {error:deleteError}=await sbClient.from('pedidos').delete().eq('id',extra.id);
      if(deleteError)throw new Error(`Supabase pedidos: ${deleteError.message||deleteError.code||'erro ao limpar backup duplicado'}`);
    }
-   return;
+   return compacto;
  }
 
  const {error:insertError}=await sbClient.from('pedidos').insert(row);
@@ -1629,7 +1659,8 @@ async function restaurarFotosCatalogoDoBackup(snapshot){
     p.fotoIds=[];
     reconstruidos.push(p);
   }
-  if(reconstruidos.length)atual.produtos=reconstruidos;
+  // A restauração é um espelho: catálogo vazio na nuvem também deve limpar o local.
+  atual.produtos=reconstruidos;
 
   let restauradas=0, falhas=0;
   const porProduto=new Map();
@@ -1680,8 +1711,11 @@ async function restaurarUltimoBackupNuvem(){
   const data=Array.isArray(backupRows)?backupRows[0]:null;
   const snapshot=data?.dados?.backup;
   if(!snapshot||snapshot.tipo!=='GIBIPRINTS_CLOUD_BACKUP')throw new Error('Nenhum backup completo da nuvem foi encontrado.');
+  if(!snapshot.produtos||typeof snapshot.produtos!=='object'||Array.isArray(snapshot.produtos))throw new Error('O backup encontrado não contém a lista válida de produtos. Nada foi substituído.');
+  if(!Array.isArray(snapshot.linhas))throw new Error('O backup encontrado não contém a lista válida de linhas. Nada foi substituído.');
   const clientes=Array.isArray(snapshot.clientes)?snapshot.clientes:[];
   const pedidos=Array.isArray(snapshot.pedidos)?snapshot.pedidos:[];
+  // Baixa e valida as fotos das linhas ANTES de apagar qualquer dado local.
   const linhas=await hidratarLinhasDoBackup(snapshot.linhas);
   await localDbClear('clientes');
   await localDbClear('pedidos');
@@ -1697,10 +1731,19 @@ async function restaurarUltimoBackupNuvem(){
   cloudStoresSynced.add('pedidos');
   cloudStoresSynced.add('produtos');
   renderItems();renderProdutoAdmin();renderResumo();renderLinhasAdmin();await renderHistorico();
+  try{await initCatalogStorage();await renderCatalogAdmin();renderCatalogLinhas();}catch(e){console.warn('Atualização visual do catálogo após restauração:',e);}
+  const status=document.getElementById('backupNuvemStatus');
+  if(status)status.textContent='✅ Restauração concluída: produtos, linhas e fotos recuperados da nuvem.';
   cloudMsg('Último backup restaurado da nuvem.');
   const fotosLinhas=(linhas||[]).reduce((n,l)=>n+(l.modelos||[]).reduce((a,m)=>a+(m.fotos||[]).length,0),0);
   alert(`Restauração concluída.\n\nClientes: ${clientes.length}\nPedidos: ${pedidos.length}\nProdutos: ${Object.keys(PRODUCTS).length}\nFotos dos produtos: ${resultadoFotos.restauradas}/${resultadoFotos.referencias}\nLinhas: ${linhas.length}\nFotos das linhas: ${fotosLinhas}${resultadoFotos.falhas?`\nFotos com falha: ${resultadoFotos.falhas}`:''}`);
- }catch(e){console.error('Restauração da nuvem:',e);cloudMsg('Erro ao restaurar o backup.');alert('Não foi possível restaurar o último backup da nuvem.\n\n'+(e?.message||e));}
+ }catch(e){
+  console.error('Restauração da nuvem:',e);
+  cloudMsg('Erro ao restaurar o backup.');
+  const status=document.getElementById('backupNuvemStatus');
+  if(status)status.textContent='❌ Restauração interrompida. Confira o erro apresentado.';
+  alert('Não foi possível restaurar o último backup da nuvem.\n\n'+(e?.message||e));
+ }
 }
 
 async function restaurarBackup(ev){
