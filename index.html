@@ -439,7 +439,7 @@ window.addEventListener('unhandledrejection', function(e){
 <div class="actions">
 <button class="primary" onclick="gerarJPG()">🖼️ Gerar JPG</button>
 <button class="secondary" onclick="compartilharJPG()">📤 Compartilhar JPG</button>
-<button class="secondary" onclick="window.print()">🖨️ Imprimir / PDF</button>
+<button class="secondary" onclick="gerarPDFOrcamentoPersonalizado()">📄 PDF personalizado</button><button class="secondary" onclick="window.print()">🖨️ Imprimir / PDF</button>
 </div>
 </div>
 </div>
@@ -463,7 +463,7 @@ window.addEventListener('unhandledrejection', function(e){
 <button class="secondary" type="button" onclick="novoOrcamento()">＋ Novo orçamento</button>
 </div>
 <div id="historico" class="history-list"><p class="muted">Digite um nome ou telefone para pesquisar.</p></div>
-<div class="actions"><button class="secondary" type="button" onclick="exportarBackup()">💾 Backup (arquivo + nuvem)</button><button class="secondary" type="button" onclick="restaurarUltimoBackupNuvem()">☁️ Restaurar último backup da nuvem</button><button class="secondary" type="button" onclick="document.getElementById('backupInput').click()">📥 Restaurar arquivo</button><input id="backupInput" type="file" accept="application/json" class="hidden" onchange="restaurarBackup(event)"></div>
+<div class="actions"><button class="secondary" type="button" onclick="exportarBackup()">☁️ Backup na nuvem + arquivo</button><button class="secondary" type="button" onclick="exportarBackupLocalCompleto()">📁 Backup no armazenamento interno</button><button class="secondary" type="button" onclick="restaurarUltimoBackupNuvem()">☁️ Restaurar último backup da nuvem</button><button class="secondary" type="button" onclick="document.getElementById('backupInput').click()">📥 Restaurar arquivo</button><input id="backupInput" type="file" accept="application/json" class="hidden" onchange="restaurarBackup(event)"></div>
 </div>
 </div>
 
@@ -1615,6 +1615,31 @@ async function exportarBackup(){
  }catch(e){console.error('Backup:',e);alert('Não foi possível concluir o backup.\n\n'+(e?.message||e));}
 }
 
+
+async function exportarBackupLocalCompleto(){
+ try{
+  const snapshot=await montarSnapshotBackup();
+  const midias=snapshot.__midiaLocal||await coletarMidiasLocaisBackup();
+  const arquivos=[];
+  for(const item of midias){
+   try{arquivos.push({hash:item.hash,origem:item.origem,tipo:item.tipo,produtoId:item.produtoId||'',photoId:item.photoId||'',linhaId:item.linhaId||'',modeloId:item.modeloId||'',ordem:Number(item.ordem||0),mime_type:item.mime_type||'image/jpeg',data:await blobToDataUrl(item.blob)});}catch(e){console.warn('Foto ignorada no backup local:',e);}
+  }
+  snapshot.midia=snapshot.midia||{};snapshot.midia.arquivos=arquivos;snapshot.midia.total=arquivos.length;
+  const blob=new Blob([JSON.stringify(snapshot,null,2)],{type:'application/json'});
+  const a=document.createElement('a');a.download=`GIBIPRINTS_BACKUP_LOCAL_${new Date().toISOString().slice(0,10)}.json`;a.href=URL.createObjectURL(blob);a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1500);
+  alert(`Backup local concluído!\n\nProdutos: ${Object.keys(snapshot.produtos||{}).length}\nLinhas/Mostruários: ${(snapshot.linhas||[]).length}\nFotos incluídas: ${arquivos.length}\n\nGuarde o arquivo JSON em Downloads. Ele contém dados e imagens.`);
+ }catch(e){console.error('Backup local:',e);alert('Falha ao gerar backup local.\n\n'+(e?.message||e));}
+}
+async function restaurarFotosBackupLocal(snapshot){
+ const arquivos=Array.isArray(snapshot?.midia?.arquivos)?snapshot.midia.arquivos:[];let importadas=0;await initCatalogStorage();
+ const catalogo=getCatalogData()||{produtos:[],config:defaultCatalogData().config};const refsPorProduto=new Map();
+ for(const item of arquivos){if(item?.tipo!=='catalogo'||!item.data||!item.produtoId)continue;
+  try{const id=item.photoId||`local_${item.hash||crypto.randomUUID()}`;await catalogPut(CATALOG_PHOTO_STORE,{id,data:item.data,ordem:Number(item.ordem||0),produtoId:String(item.produtoId),atualizadoEm:new Date().toISOString()});if(!refsPorProduto.has(String(item.produtoId)))refsPorProduto.set(String(item.produtoId),[]);refsPorProduto.get(String(item.produtoId)).push({id,ordem:Number(item.ordem||0)});importadas++;}catch(e){console.warn('Importação de foto local falhou:',e);}
+ }
+ for(const produto of (catalogo.produtos||[])){const refs=refsPorProduto.get(String(produto.id));if(refs?.length){refs.sort((a,b)=>a.ordem-b.ordem);produto.fotoIds=refs.map(x=>x.id).slice(0,30);}}
+ await catalogPut(CATALOG_STORE,{id:'singleton',data:catalogo,versao:14,atualizadoEm:new Date().toISOString()});catalogDataCache=catalogo;return importadas;
+}
+
 async function restaurarFotosCatalogoDoBackup(snapshot){
   const manifest=Array.isArray(snapshot?.midia?.manifest)?snapshot.midia.manifest:[];
   let refs=manifest.filter(x=>x?.tipo==='catalogo'&&x?.produtoId&&(x?.public_url||x?.storage_path));
@@ -1757,6 +1782,7 @@ async function restaurarBackup(ev){
   if(Array.isArray(data.linhas))await substituirLinhasLocais(data.linhas);
   await restaurarMidiaEspecialBackup(data.midia);
   const resultadoFotos=await restaurarFotosCatalogoDoBackup(data);
+  const fotosLocaisImportadas=await restaurarFotosBackupLocal(data);
   cloudStoresSynced.add('clientes');cloudStoresSynced.add('pedidos');cloudStoresSynced.add('produtos');
   await renderHistorico();renderItems();renderProdutoAdmin();renderResumo();renderLinhasAdmin();
   alert(`Backup restaurado com sucesso.\n\nClientes: ${(data.clientes||[]).length}\nPedidos: ${(data.pedidos||[]).length}\nProdutos: ${Object.keys(data.produtos||PRODUCTS||{}).length}\nFotos dos produtos: ${resultadoFotos.restauradas}/${resultadoFotos.referencias}\nLinhas: ${(data.linhas||[]).length}${resultadoFotos.falhas?`\nFotos com falha: ${resultadoFotos.falhas}`:''}`);
@@ -2186,6 +2212,15 @@ async function compartilharJPG(){
  if(navigator.share&&(!navigator.canShare||navigator.canShare({files:[f]}))){try{await navigator.share({title:`GIBIPRINTS Orçamento #${r.num}`,files:[f]});return}catch(e){}}
  const a=document.createElement('a');a.download=f.name;a.href=URL.createObjectURL(blob);a.click();
 }
+
+async function gerarPDFOrcamentoPersonalizado(){
+ const r=await buildQuote();if(!r)return;
+ try{const Js=await ensureJsPDF(),canvas=r.canvas,img=canvas.toDataURL('image/jpeg',0.96),doc=new Js({orientation:'portrait',unit:'mm',format:'a4',compress:true});
+  const pw=210,ph=297,margin=5,scale=Math.min((pw-margin*2)/canvas.width,(ph-margin*2)/canvas.height),w=canvas.width*scale,h=canvas.height*scale;
+  doc.addImage(img,'JPEG',(pw-w)/2,(ph-h)/2,w,h,undefined,'FAST');doc.save(`GIBIPRINTS_Orcamento_${r.num}.pdf`);
+ }catch(e){console.error('PDF do orçamento:',e);alert('Não foi possível gerar o PDF personalizado.\n\n'+(e?.message||e));}
+}
+
 async function iniciarGIBIPRINTSCore(){
   document.getElementById('cliente').addEventListener('input',renderResumo);
   document.getElementById('clienteWhats').addEventListener('input',renderResumo);
