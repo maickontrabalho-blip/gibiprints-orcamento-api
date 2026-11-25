@@ -323,7 +323,7 @@ window.addEventListener('unhandledrejection', function(e){
 <div id="produtosPanel" class="card hidden">
   <h2>📦 Cadastro e edição de produtos</h2>
   <p class="muted">Altere os preços sem mexer no código. Cada produto possui as quatro faixas: 1–9, 10–19, 20–49 e 50+.</p>
-  <div class="actions"><button class="primary" type="button" onclick="novoProdutoAdmin()">➕ Novo produto</button><button class="secondary" type="button" onclick="abrirNovaLinha()">➕ Nova linha</button><button class="secondary" type="button" id="btnBackupNuvemGibi" onclick="fazerBackupNuvemCompleto()">☁️ Fazer backup na nuvem</button><button class="secondary" type="button" id="btnRestaurarNuvemGibi" onclick="restaurarUltimoBackupNuvem()">♻️ Restaurar da nuvem</button></div>
+  <div class="actions"><button class="primary" type="button" onclick="novoProdutoAdmin()">➕ Novo produto</button><button class="secondary" type="button" onclick="abrirNovaLinha()">➕ Nova linha</button><button class="secondary" type="button" id="btnBackupNuvemGibi" onclick="fazerBackupNuvemCompleto()">☁️ Backup na nuvem</button><button class="secondary" type="button" id="btnBackupDispositivoGibi" onclick="exportarBackupLocalCompleto()">📁 Backup no dispositivo</button><button class="secondary" type="button" id="btnRestaurarNuvemGibi" onclick="restaurarUltimoBackupNuvem()">☁️ Restaurar da nuvem</button><button class="secondary" type="button" id="btnRestaurarDispositivoGibi" onclick="document.getElementById('backupInput').click()">📂 Restaurar do dispositivo</button><input id="backupInput" type="file" accept="application/json,.json" class="hidden" onchange="restaurarBackup(event)"></div>
   <div id="backupNuvemStatus" class="muted" role="status" aria-live="polite" style="margin-top:8px">Backup e restauração incluem produtos, linhas/mostruários e fotos. Entre na conta para usar.</div>
   <div id="linhasAdminPanel" class="card" style="margin-top:12px;background:#f8fbf7;"></div>
   <div id="produtoAdminForm" class="card hidden" style="margin-top:12px;background:#f8fbf7;">
@@ -463,7 +463,7 @@ window.addEventListener('unhandledrejection', function(e){
 <button class="secondary" type="button" onclick="novoOrcamento()">＋ Novo orçamento</button>
 </div>
 <div id="historico" class="history-list"><p class="muted">Digite um nome ou telefone para pesquisar.</p></div>
-<div class="actions"><button class="secondary" type="button" onclick="exportarBackup()">☁️ Backup na nuvem + arquivo</button><button class="secondary" type="button" onclick="exportarBackupLocalCompleto()">📁 Backup no armazenamento interno</button><button class="secondary" type="button" onclick="restaurarUltimoBackupNuvem()">☁️ Restaurar último backup da nuvem</button><button class="secondary" type="button" onclick="document.getElementById('backupInput').click()">📥 Restaurar arquivo</button><input id="backupInput" type="file" accept="application/json" class="hidden" onchange="restaurarBackup(event)"></div>
+<div class="actions"><button class="secondary" type="button" onclick="fazerBackupNuvemCompleto()">☁️ Backup na nuvem</button><button class="secondary" type="button" onclick="exportarBackupLocalCompleto()">📁 Backup no dispositivo</button><button class="secondary" type="button" onclick="restaurarUltimoBackupNuvem()">☁️ Restaurar da nuvem</button><button class="secondary" type="button" onclick="document.getElementById('backupInput').click()">📂 Restaurar do dispositivo</button></div>
 </div>
 </div>
 
@@ -1563,7 +1563,7 @@ async function montarSnapshotBackup(){
  let linhas=[];
  try{linhas=await linhaAll();}catch(e){console.warn('Backup das linhas:',e);}
  const midiaLocal=await coletarMidiasLocaisBackup();
- const snapshot={versao:4,tipo:'GIBIPRINTS_CLOUD_BACKUP',backupId:CLOUD_BACKUP_SYNC_ID,exportadoEm:new Date().toISOString(),clientes,pedidos,produtos,productMeta:meta,linhas,midia:{total:midiaLocal.length,manifest:midiaLocal.map(x=>({hash:x.hash,origem:x.origem,mime_type:x.mime_type,tamanho_bytes:x.tamanho_bytes}))}};
+ const snapshot={versao:5,tipo:'GIBIPRINTS_CLOUD_BACKUP',backupId:CLOUD_BACKUP_SYNC_ID,exportadoEm:new Date().toISOString(),clientes,pedidos,produtos,productMeta:meta,linhas,armazenamentoLocal:capturarArmazenamentoLocalBackup(),midia:{total:midiaLocal.length,manifest:midiaLocal.map(x=>({hash:x.hash,origem:x.origem,tipo:x.tipo,produtoId:x.produtoId||'',photoId:x.photoId||'',linhaId:x.linhaId||'',modeloId:x.modeloId||'',ordem:Number(x.ordem||0),mime_type:x.mime_type,tamanho_bytes:x.tamanho_bytes}))}};
  // V38: evita reconstruir/redimensionar/hashar todas as imagens pela segunda vez.
  Object.defineProperty(snapshot,'__midiaLocal',{value:midiaLocal,enumerable:false,configurable:true});
  return snapshot;
@@ -1616,19 +1616,92 @@ async function exportarBackup(){
 }
 
 
+function capturarArmazenamentoLocalBackup(){
+ const out={};
+ for(let i=0;i<localStorage.length;i++){
+  const k=localStorage.key(i);if(!k)continue;
+  // Não exporta tokens/sessões de autenticação; serão criados novamente pelo login.
+  if(/supabase.*(auth|token)|access_token|refresh_token|sb-.*auth/i.test(k))continue;
+  try{out[k]=localStorage.getItem(k);}catch(e){}
+ }
+ return out;
+}
+function dataUrlParaBlobBackup(data){try{return dataUrlToBlob(data);}catch(e){return null;}}
+async function escreverArquivoPastaGibi(dir,nome,conteudo,tipo='application/octet-stream'){
+ const h=await dir.getFileHandle(nome,{create:true});const w=await h.createWritable();
+ await w.write(conteudo instanceof Blob?conteudo:new Blob([conteudo],{type:tipo}));await w.close();
+}
+async function salvarMidiaEmPastaGibi(root,snapshot){
+ const produtosDir=await root.getDirectoryHandle('Produtos',{create:true});
+ const mostruariosDir=await root.getDirectoryHandle('Mostruarios',{create:true});
+ const fotosDir=await root.getDirectoryHandle('Fotos',{create:true});
+ const videosDir=await root.getDirectoryHandle('Videos',{create:true});
+ const docsDir=await root.getDirectoryHandle('Documentos',{create:true});
+ const media=Array.isArray(snapshot?.midia?.arquivos)?snapshot.midia.arquivos:[];
+ for(let i=0;i<media.length;i++){
+  const item=media[i];if(!item?.data)continue;
+  const blob=dataUrlParaBlobBackup(item.data);if(!blob)continue;
+  const ext=(blob.type.split('/')[1]||'jpg').replace('jpeg','jpg').replace(/[^a-z0-9]/gi,'');
+  const nome=`${String(i+1).padStart(4,'0')}_${String(item.hash||'midia').slice(0,16)}.${ext||'jpg'}`;
+  let destino=fotosDir;
+  if(item.tipo==='linha'){
+   const linha=(snapshot.linhas||[]).find(x=>String(x.id)===String(item.linhaId));
+   const nomeLinha=String(linha?.titulo||'Mostruario').replace(/[\\/:*?"<>|]/g,'_').slice(0,60)||'Mostruario';
+   destino=await mostruariosDir.getDirectoryHandle(nomeLinha,{create:true});
+  }else if(item.tipo==='catalogo'){
+   const nomeProduto=Object.keys(snapshot.produtos||{}).find(n=>String(snapshot.productMeta?.[n]?.catalog_id||'')===String(item.produtoId))||'Produto';
+   const pasta=String(nomeProduto).replace(/[\\/:*?"<>|]/g,'_').slice(0,60)||'Produto';
+   destino=await produtosDir.getDirectoryHandle(pasta,{create:true});
+  }
+  await escreverArquivoPastaGibi(destino,nome,blob);
+ }
+ // Mantém pastas prontas para anexos futuros, sem inventar arquivos que não existem.
+ void videosDir;void docsDir;
+}
 async function exportarBackupLocalCompleto(){
+ const btn=document.getElementById('btnBackupDispositivoGibi');if(btn)btn.disabled=true;
+ const status=document.getElementById('backupNuvemStatus');
  try{
+  if(status)status.textContent='Preparando cópia completa para o dispositivo...';
   const snapshot=await montarSnapshotBackup();
   const midias=snapshot.__midiaLocal||await coletarMidiasLocaisBackup();
   const arquivos=[];
   for(const item of midias){
-   try{arquivos.push({hash:item.hash,origem:item.origem,tipo:item.tipo,produtoId:item.produtoId||'',photoId:item.photoId||'',linhaId:item.linhaId||'',modeloId:item.modeloId||'',ordem:Number(item.ordem||0),mime_type:item.mime_type||'image/jpeg',data:await blobToDataUrl(item.blob)});}catch(e){console.warn('Foto ignorada no backup local:',e);}
+   try{arquivos.push({hash:item.hash,origem:item.origem,tipo:item.tipo,produtoId:item.produtoId||'',photoId:item.photoId||'',linhaId:item.linhaId||'',modeloId:item.modeloId||'',ordem:Number(item.ordem||0),mime_type:item.mime_type||'image/jpeg',data:await blobToDataUrl(item.blob)});}catch(e){console.warn('Mídia ignorada no backup local:',e);throw new Error('Não foi possível incluir uma das mídias no backup. Nenhum backup foi finalizado.');}
   }
   snapshot.midia=snapshot.midia||{};snapshot.midia.arquivos=arquivos;snapshot.midia.total=arquivos.length;
-  const blob=new Blob([JSON.stringify(snapshot,null,2)],{type:'application/json'});
-  const a=document.createElement('a');a.download=`GIBIPRINTS_BACKUP_LOCAL_${new Date().toISOString().slice(0,10)}.json`;a.href=URL.createObjectURL(blob);a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1500);
-  alert(`Backup local concluído!\n\nProdutos: ${Object.keys(snapshot.produtos||{}).length}\nLinhas/Mostruários: ${(snapshot.linhas||[]).length}\nFotos incluídas: ${arquivos.length}\n\nGuarde o arquivo JSON em Downloads. Ele contém dados e imagens.`);
- }catch(e){console.error('Backup local:',e);alert('Falha ao gerar backup local.\n\n'+(e?.message||e));}
+  snapshot.armazenamentoLocal=capturarArmazenamentoLocalBackup();
+  snapshot.formatoBackup='GIBIPRINTS_BACKUP_COMPLETO_V2';
+  snapshot.inventario={clientes:(snapshot.clientes||[]).length,pedidos:(snapshot.pedidos||[]).length,produtos:Object.keys(snapshot.produtos||{}).length,mostruarios:(snapshot.linhas||[]).length,midias:arquivos.length};
+  const nomeArquivo=`GIBIPRINTS_BACKUP_COMPLETO_${new Date().toISOString().replace(/[:.]/g,'-')}.json`;
+  // Chromium desktop permite escolher Documentos e criar a árvore de pastas. Em navegadores
+  // sem suporte, o backup completo (com fotos incorporadas) é baixado como JSON único.
+  if(window.showDirectoryPicker){
+   try{
+    const base=await window.showDirectoryPicker({id:'gibiprints-backup',mode:'readwrite',startIn:'documents'});
+    const root=await base.getDirectoryHandle('GibiPrints',{create:true});
+    const backupDir=await root.getDirectoryHandle('Backup completo',{create:true});
+    await escreverArquivoPastaGibi(backupDir,nomeArquivo,JSON.stringify(snapshot), 'application/json');
+    await salvarMidiaEmPastaGibi(root,snapshot);
+    await escreverArquivoPastaGibi(root,'LEIA-ME.txt',`Backup completo GIBIPRINTS\nData: ${new Date().toLocaleString('pt-BR')}\nO arquivo ${nomeArquivo} contém os dados e as mídias incorporadas para restauração.\nMantenha a pasta inteira em local seguro.`,'text/plain;charset=utf-8');
+    if(status)status.textContent='✅ Backup completo salvo na pasta Documentos/GibiPrints.';
+    alert(`Backup completo salvo no dispositivo!\n\nPasta: GibiPrints\nClientes: ${snapshot.clientes.length}\nPedidos: ${snapshot.pedidos.length}\nProdutos: ${Object.keys(snapshot.produtos).length}\nMostruários: ${snapshot.linhas.length}\nFotos e mídias: ${arquivos.length}\n\nO arquivo de restauração está em Backup completo.`);
+    return true;
+   }catch(e){
+    if(e?.name==='AbortError')throw new Error('Você cancelou a escolha da pasta. O backup não foi salvo.');
+    if(e?.name!=='NotSupportedError'&&e?.name!=='SecurityError')throw e;
+    console.warn('Pasta selecionável indisponível; usando arquivo completo:',e);
+   }
+  }
+  const blob=new Blob([JSON.stringify(snapshot)],{type:'application/json'});
+  const a=document.createElement('a');a.download=nomeArquivo;a.href=URL.createObjectURL(blob);a.click();setTimeout(()=>URL.revokeObjectURL(a.href),3000);
+  if(status)status.textContent='✅ Backup completo gerado. Salve o arquivo na pasta Documentos/GibiPrints.';
+  alert(`Backup completo gerado!\n\nProdutos: ${snapshot.inventario.produtos}\nMostruários: ${snapshot.inventario.mostruarios}\nClientes: ${snapshot.inventario.clientes}\nPedidos: ${snapshot.inventario.pedidos}\nFotos e mídias: ${snapshot.inventario.midias}\n\nNo seu dispositivo, guarde o arquivo na pasta Documentos/GibiPrints. Ele contém os dados e as imagens para restauração.`);
+  return true;
+ }catch(e){
+  console.error('Backup local completo:',e);if(status)status.textContent='❌ Não foi possível concluir o backup local.';
+  alert('Falha ao gerar o backup no dispositivo.\n\n'+(e?.message||e));return false;
+ }finally{if(btn)btn.disabled=false;}
 }
 async function restaurarFotosBackupLocal(snapshot){
  const arquivos=Array.isArray(snapshot?.midia?.arquivos)?snapshot.midia.arquivos:[];let importadas=0;await initCatalogStorage();
@@ -1747,6 +1820,7 @@ async function restaurarUltimoBackupNuvem(){
   for(const c of clientes)await localDbPut('clientes',c);
   for(const p of pedidos)await localDbPut('pedidos',p);
   await substituirLinhasLocais(linhas);
+  if(snapshot.armazenamentoLocal&&typeof snapshot.armazenamentoLocal==='object'){for(const [k,v] of Object.entries(snapshot.armazenamentoLocal)){if(/supabase.*(auth|token)|access_token|refresh_token|sb-.*auth/i.test(k))continue;try{localStorage.setItem(k,String(v));}catch(e){console.warn('Configuração local não restaurada:',k,e);}}}
   PRODUCTS={...(snapshot.produtos||{})};
   PRODUCT_META={...(snapshot.productMeta||{})};
   persistProductsLocal();
@@ -1775,18 +1849,36 @@ async function restaurarBackup(ev){
  const f=ev.target.files?.[0];if(!f)return;
  try{
   const data=JSON.parse(await f.text());
+  if(!data||data.tipo!=='GIBIPRINTS_CLOUD_BACKUP'||!data.produtos||typeof data.produtos!=='object'||!Array.isArray(data.linhas)||!Array.isArray(data.clientes)||!Array.isArray(data.pedidos))throw new Error('O arquivo selecionado não é um backup completo válido da GIBIPRINTS. Nada foi alterado.');
+  if(!confirm(`Restaurar este backup do dispositivo?\n\nClientes: ${data.clientes.length}\nPedidos: ${data.pedidos.length}\nProdutos: ${Object.keys(data.produtos).length}\nMostruários: ${data.linhas.length}\n\nOs dados atuais serão substituídos pelos dados deste arquivo.`))return;
+  // Valida e prepara os dados antes de substituir as bases locais.
+  const linhasPreparadas=JSON.parse(JSON.stringify(data.linhas));
+  // Backup local já contém as fotos das linhas em data URL: restaura sem rede e sem baixar cópias remotas.
+  for(const linha of linhasPreparadas)for(const modelo of (linha.modelos||[]))if(!Array.isArray(modelo.fotos))modelo.fotos=[];
+  await initCatalogStorage();
   await localDbClear('clientes');await localDbClear('pedidos');
-  for(const c of (data.clientes||[]))await localDbPut('clientes',c);
-  for(const p of (data.pedidos||[]))await localDbPut('pedidos',p);
-  if(data.produtos){PRODUCTS={...(data.produtos||{})};PRODUCT_META={...(data.productMeta||{})};persistProductsLocal();}
-  if(Array.isArray(data.linhas))await substituirLinhasLocais(data.linhas);
+  for(const c of data.clientes)await localDbPut('clientes',c);
+  for(const p of data.pedidos)await localDbPut('pedidos',p);
+  PRODUCTS={...(data.produtos||{})};PRODUCT_META={...(data.productMeta||{})};persistProductsLocal();
+  await substituirLinhasLocais(linhasPreparadas);
+  if(data.armazenamentoLocal&&typeof data.armazenamentoLocal==='object'){
+   for(const [k,v] of Object.entries(data.armazenamentoLocal)){
+    if(/supabase.*(auth|token)|access_token|refresh_token|sb-.*auth/i.test(k))continue;
+    try{localStorage.setItem(k,String(v));}catch(e){console.warn('Configuração local não restaurada:',k,e);}
+   }
+  }
   await restaurarMidiaEspecialBackup(data.midia);
   const resultadoFotos=await restaurarFotosCatalogoDoBackup(data);
   const fotosLocaisImportadas=await restaurarFotosBackupLocal(data);
   cloudStoresSynced.add('clientes');cloudStoresSynced.add('pedidos');cloudStoresSynced.add('produtos');
   await renderHistorico();renderItems();renderProdutoAdmin();renderResumo();renderLinhasAdmin();
-  alert(`Backup restaurado com sucesso.\n\nClientes: ${(data.clientes||[]).length}\nPedidos: ${(data.pedidos||[]).length}\nProdutos: ${Object.keys(data.produtos||PRODUCTS||{}).length}\nFotos dos produtos: ${resultadoFotos.restauradas}/${resultadoFotos.referencias}\nLinhas: ${(data.linhas||[]).length}${resultadoFotos.falhas?`\nFotos com falha: ${resultadoFotos.falhas}`:''}`);
- }catch(e){alert('Não foi possível restaurar o backup.\n\n'+(e?.message||e));}ev.target.value='';
+  try{await renderCatalogAdmin();renderCatalogLinhas();}catch(e){console.warn('Atualização do catálogo:',e);}
+  const fotosLinhas=(linhasPreparadas||[]).reduce((n,l)=>n+(l.modelos||[]).reduce((a,m)=>a+(m.fotos||[]).length,0),0);
+  const msg=`Backup do dispositivo restaurado!\n\nClientes: ${data.clientes.length}\nPedidos: ${data.pedidos.length}\nProdutos: ${Object.keys(data.produtos).length}\nMostruários: ${linhasPreparadas.length}\nFotos de produtos recuperadas: ${fotosLocaisImportadas||resultadoFotos.restauradas}\nFotos de mostruários: ${fotosLinhas}`;
+  if(document.getElementById('backupNuvemStatus'))document.getElementById('backupNuvemStatus').textContent='✅ Backup restaurado do dispositivo, incluindo produtos, mostruários e mídias.';
+  alert(msg);
+ }catch(e){console.error('Restauração do dispositivo:',e);alert('Não foi possível restaurar o backup do dispositivo.\n\n'+(e?.message||e));}
+ finally{ev.target.value='';}
 }
 const TAMANHOS_PROIBIDOS_GIBI=['G1','G2','G3','XG','XXG'];
 
